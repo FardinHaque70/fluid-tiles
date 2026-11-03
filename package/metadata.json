@@ -1,0 +1,14 @@
+{
+  "KPackageStructure": "KWin/Script",
+  "KPlugin": {
+    "Id": "fluidtiles-controller",
+    "Name": "Fluid Tiles — Native Tiling (experimental)",
+    "Description": "Dwindle tiling, direct split resizing and interruptible motion. Loads a native plugin built for this KWin version.",
+    "License": "GPL-3.0-or-later",
+    "Version": "0.5.3",
+    "EnabledByDefault": false
+  },
+  "X-KDE-ConfigModule": "kwin/effects/configs/kcm_kwin4_genericscripted",
+  "X-Plasma-API": "declarativescript",
+  "X-Plasma-MainScript": "ui/main.qml"
+}

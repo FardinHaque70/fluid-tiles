@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+ <kcfgfile name=""/>
+ <group name="">
+  <entry name="InnerGap" type="Double"><label>Gap between windows</label><default>10</default><min>0</min><max>80</max></entry>
+  <entry name="OuterGap" type="Double"><label>Gap around the layout</label><default>10</default><min>0</min><max>80</max></entry>
+  <entry name="SpringFrequency" type="Double"><label>Animation responsiveness</label><default>24</default><min>8</min><max>60</max></entry>
+  <entry name="IgnoreApplications" type="String"><label>Ignore application IDs or window classes</label><default>krunner
+yakuake
+spectacle
+kded5
+xwaylandvideobridge
+plasmashell
+ksplashqml
+org.kde.plasmashell
+org.kde.polkit-kde-authentication-agent-1
+org.kde.kruler
+kruler
+kwin_wayland
+ksmserver-logout-greeter</default></entry>
+  <entry name="IgnoreTitles" type="String"><label>Ignore window titles</label><default></default></entry>
+  <entry name="IgnoreRoles" type="String"><label>Ignore window roles</label><default>quake</default></entry>
+  <entry name="OutlinesEnabled" type="Bool"><label>Outlines</label><default>true</default></entry>
+  <entry name="RoundedCornersEnabled" type="Bool"><label>Rounded corners</label><default>true</default></entry>
+  <entry name="TitlebarControlEnabled" type="Bool"><label>Titlebar control</label><default>true</default></entry>
+  <entry name="BorderWidth" type="Double"><label>Outline thickness</label><default>2</default><min>0</min><max>8</max></entry>
+  <entry name="CornerRadius" type="Double"><label>Corner radius</label><default>8</default><min>0</min><max>32</max></entry>
+  <entry name="UseSystemBorderColors" type="Bool"><label>Use KDE border colors</label><default>true</default></entry>
+  <entry name="ActiveBorderColor" type="Color"><label>Active outline</label><default>#3daee9</default></entry>
+  <entry name="InactiveBorderColor" type="Color"><label>Inactive outline</label><default>#6e6e6e</default></entry>
+  <entry name="TitlebarScope" type="Int"><label>Hide titlebars on</label><default>0</default><min>0</min><max>1</max></entry>
+  <entry name="AppearanceIgnoredApplications" type="String"><label>Appearance exclusions</label><default>krunner
+yakuake
+spectacle
+kded5
+xwaylandvideobridge
+plasmashell
+ksplashqml
+org.kde.plasmashell
+org.kde.polkit-kde-authentication-agent-1
+org.kde.kruler
+kruler
+kwin_wayland
+ksmserver-logout-greeter</default></entry>
+ </group>
+</kcfg>

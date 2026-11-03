@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>FluidTilesConfig</class>
+ <widget class="QWidget" name="FluidTilesConfig">
+  <property name="windowTitle"><string>Fluid Tiles</string></property>
+  <property name="minimumSize"><size><width>560</width><height>440</height></size></property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item><widget class="QTabWidget" name="tabs">
+    <widget class="QWidget" name="layoutTab">
+     <attribute name="title"><string>Layout &amp; animation</string></attribute>
+     <layout class="QVBoxLayout" name="layoutPage">
+      <item><widget class="QLabel" name="layoutHelp"><property name="text"><string>Adjust window spacing and how quickly layout changes settle.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+      <item><layout class="QFormLayout" name="layoutForm">
+       <item row="0" column="0"><widget class="QLabel" name="innerLabel"><property name="text"><string>Gap between windows:</string></property><property name="buddy"><cstring>kcfg_InnerGap</cstring></property></widget></item>
+       <item row="0" column="1"><widget class="QDoubleSpinBox" name="kcfg_InnerGap"><property name="decimals"><number>1</number></property><property name="maximum"><double>80.000000000000000</double></property><property name="suffix"><string> px</string></property></widget></item>
+       <item row="1" column="0"><widget class="QLabel" name="outerLabel"><property name="text"><string>Gap around the layout:</string></property><property name="buddy"><cstring>kcfg_OuterGap</cstring></property></widget></item>
+       <item row="1" column="1"><widget class="QDoubleSpinBox" name="kcfg_OuterGap"><property name="decimals"><number>1</number></property><property name="maximum"><double>80.000000000000000</double></property><property name="suffix"><string> px</string></property></widget></item>
+       <item row="2" column="0"><widget class="QLabel" name="speedLabel"><property name="text"><string>Animation responsiveness:</string></property><property name="buddy"><cstring>kcfg_SpringFrequency</cstring></property></widget></item>
+       <item row="2" column="1"><widget class="QDoubleSpinBox" name="kcfg_SpringFrequency"><property name="decimals"><number>0</number></property><property name="minimum"><double>8.000000000000000</double></property><property name="maximum"><double>60.000000000000000</double></property><property name="singleStep"><double>2.000000000000000</double></property></widget></item>
+      </layout></item>
+      <item><widget class="QLabel" name="unitsHelp"><property name="text"><string>Gaps follow display scaling. Higher responsiveness settles faster; KDE's global animation speed is also respected.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+      <item><spacer name="layoutSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>160</height></size></property></spacer></item>
+     </layout>
+    </widget>
+    <widget class="QWidget" name="rulesTab">
+     <attribute name="title"><string>Ignored windows</string></attribute>
+     <layout class="QVBoxLayout" name="rulesPage">
+      <item><widget class="QLabel" name="rulesHelp"><property name="text"><string>Ignored windows move and resize freely. Enter one pattern per line, matching the whole field. Matching ignores case; * matches any text and ? matches one character. Use * around a title fragment. Leave empty to disable rules.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+      <item><widget class="QLabel" name="applicationsLabel"><property name="text"><string>Application ID / window class or instance:</string></property><property name="buddy"><cstring>kcfg_IgnoreApplications</cstring></property></widget></item>
+      <item><widget class="QPlainTextEdit" name="kcfg_IgnoreApplications"><property name="placeholderText"><string>org.kde.*
+firefox</string></property><property name="maximumHeight"><number>80</number></property><property name="tabChangesFocus"><bool>true</bool></property></widget></item>
+      <item><widget class="QLabel" name="titlesLabel"><property name="text"><string>Window title:</string></property><property name="buddy"><cstring>kcfg_IgnoreTitles</cstring></property></widget></item>
+      <item><widget class="QPlainTextEdit" name="kcfg_IgnoreTitles"><property name="placeholderText"><string>*Picture-in-Picture*
+*Settings*</string></property><property name="maximumHeight"><number>80</number></property><property name="tabChangesFocus"><bool>true</bool></property></widget></item>
+      <item><widget class="QLabel" name="rolesLabel"><property name="text"><string>Window role (when provided by the application):</string></property><property name="buddy"><cstring>kcfg_IgnoreRoles</cstring></property></widget></item>
+      <item><widget class="QPlainTextEdit" name="kcfg_IgnoreRoles"><property name="placeholderText"><string>pop-up*</string></property><property name="maximumHeight"><number>60</number></property><property name="tabChangesFocus"><bool>true</bool></property></widget></item>
+     </layout>
+    </widget>
+    <widget class="QWidget" name="appearanceTab">
+     <attribute name="title"><string>Appearance</string></attribute>
+     <layout class="QVBoxLayout" name="appearancePage">
+      <item><widget class="QScrollArea" name="appearanceScroll"><property name="widgetResizable"><bool>true</bool></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+       <widget class="QWidget" name="appearanceOptions">
+        <layout class="QVBoxLayout" name="appearanceOptionsLayout">
+         <item><widget class="QGroupBox" name="kcfg_OutlinesEnabled"><property name="title"><string>Outlines</string></property><property name="checkable"><bool>true</bool></property><property name="checked"><bool>true</bool></property>
+          <layout class="QVBoxLayout" name="outlinesLayout"><item><layout class="QFormLayout" name="outlineForm">
+          <item row="0" column="0"><widget class="QLabel" name="borderWidthLabel"><property name="text"><string>Outline thickness:</string></property><property name="buddy"><cstring>kcfg_BorderWidth</cstring></property></widget></item>
+          <item row="0" column="1"><widget class="QDoubleSpinBox" name="kcfg_BorderWidth"><property name="decimals"><number>1</number></property><property name="maximum"><double>8</double></property><property name="singleStep"><double>0.5</double></property><property name="suffix"><string> px</string></property></widget></item>
+          </layout></item>
+         <item><widget class="QCheckBox" name="kcfg_UseSystemBorderColors"><property name="text"><string>Use KDE colors for active and inactive outlines</string></property></widget></item>
+         <item><widget class="QWidget" name="customColors"><layout class="QFormLayout" name="colorsForm">
+          <item row="0" column="0"><widget class="QLabel" name="activeColorLabel"><property name="text"><string>Active outline:</string></property><property name="buddy"><cstring>kcfg_ActiveBorderColor</cstring></property></widget></item>
+          <item row="0" column="1"><widget class="KColorButton" name="kcfg_ActiveBorderColor"/></item>
+          <item row="1" column="0"><widget class="QLabel" name="inactiveColorLabel"><property name="text"><string>Inactive outline:</string></property><property name="buddy"><cstring>kcfg_InactiveBorderColor</cstring></property></widget></item>
+          <item row="1" column="1"><widget class="KColorButton" name="kcfg_InactiveBorderColor"/></item>
+         </layout></widget></item>
+          </layout>
+         </widget></item>
+         <item><widget class="QGroupBox" name="kcfg_RoundedCornersEnabled"><property name="title"><string>Rounded corners</string></property><property name="checkable"><bool>true</bool></property><property name="checked"><bool>true</bool></property>
+          <layout class="QVBoxLayout" name="roundingLayout"><item><layout class="QFormLayout" name="roundingForm">
+          <item row="0" column="0"><widget class="QLabel" name="cornerRadiusLabel"><property name="text"><string>Corner radius:</string></property><property name="buddy"><cstring>kcfg_CornerRadius</cstring></property></widget></item>
+          <item row="0" column="1"><widget class="QDoubleSpinBox" name="kcfg_CornerRadius"><property name="decimals"><number>1</number></property><property name="maximum"><double>32</double></property><property name="suffix"><string> px</string></property></widget></item>
+          </layout></item>
+          <item><widget class="QLabel" name="roundingHelp"><property name="text"><string>Turn off or set radius to zero to keep native window corners.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+          </layout>
+         </widget></item>
+         <item><widget class="QGroupBox" name="kcfg_TitlebarControlEnabled"><property name="title"><string>Titlebar control</string></property><property name="checkable"><bool>true</bool></property><property name="checked"><bool>true</bool></property>
+          <layout class="QVBoxLayout" name="titlebarsLayout"><item><layout class="QFormLayout" name="titlebarsForm">
+          <item row="0" column="0"><widget class="QLabel" name="titlebarScopeLabel"><property name="text"><string>Hide titlebars on:</string></property><property name="buddy"><cstring>kcfg_TitlebarScope</cstring></property></widget></item>
+          <item row="0" column="1"><widget class="QComboBox" name="kcfg_TitlebarScope">
+           <item><property name="text"><string>Tiled windows</string></property></item>
+           <item><property name="text"><string>Tiled and floating windows</string></property></item>
+          </widget></item>
+          </layout></item>
+          <item><widget class="QLabel" name="titlebarsHelp"><property name="text"><string>Turn off to restore KDE titlebars. Application-drawn headers stay unchanged. Use Meta + left-drag to move windows with hidden titlebars.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+          </layout>
+         </widget></item>
+         <item><widget class="QLabel" name="appearanceExclusionsLabel"><property name="text"><string>Skip appearance for these application IDs / classes / instances:</string></property><property name="buddy"><cstring>kcfg_AppearanceIgnoredApplications</cstring></property></widget></item>
+         <item><widget class="QPlainTextEdit" name="kcfg_AppearanceIgnoredApplications"><property name="maximumHeight"><number>80</number></property><property name="tabChangesFocus"><bool>true</bool></property></widget></item>
+         <item><widget class="QLabel" name="appearanceHelp"><property name="text"><string>Sizes follow display scaling. Gaps measure empty space between outlines. These exclusions apply to all three appearance sections and are separate from tiling rules. Enter one application pattern per line.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+         <item><spacer name="appearanceSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>10</height></size></property></spacer></item>
+        </layout>
+       </widget>
+      </widget></item>
+     </layout>
+    </widget>
+   </widget></item>
+   <item><widget class="QLabel" name="applyHelp"><property name="text"><string>Apply updates a running tiler. Saving these preferences does not enable Fluid Tiles.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+  </layout>
+ </widget>
+ <customwidgets><customwidget><class>KColorButton</class><extends>QPushButton</extends><header>kcolorbutton.h</header></customwidget></customwidgets>
+ <resources/>
+ <connections>
+  <connection><sender>kcfg_UseSystemBorderColors</sender><signal>toggled(bool)</signal><receiver>customColors</receiver><slot>setDisabled(bool)</slot></connection>
+ </connections>
+</ui>

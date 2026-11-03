@@ -1,0 +1,25 @@
+# Local builds and disposable compositor sessions
+/build*/
+/test-results/
+/test-session*/
+
+# Python environments and bytecode
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local configuration and agent credentials
+/.agents/
+/.aws/
+/.codex/
+.env
+.env.*
+CMakeUserPresets.json
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+*~
+/core
+/core.[0-9]*
