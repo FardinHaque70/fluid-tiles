@@ -7,6 +7,7 @@
   <entry name="InnerGap" type="Double"><label>Gap between windows</label><default>10</default><min>0</min><max>80</max></entry>
   <entry name="OuterGap" type="Double"><label>Gap around the layout</label><default>10</default><min>0</min><max>80</max></entry>
   <entry name="SpringFrequency" type="Double"><label>Animation responsiveness</label><default>24</default><min>8</min><max>60</max></entry>
+  <entry name="ExpandSingleWindow" type="Bool"><label>Expand a single tiled window</label><default>true</default></entry>
   <entry name="IgnoreApplications" type="String"><label>Ignore application IDs or window classes</label><default>krunner
 yakuake
 spectacle

@@ -1,0 +1,98 @@
+[
+  {
+    "file": "hyprland-hyprland.lua",
+    "repository": "hyprwm/Hyprland",
+    "revision": "988b94362e2700b4b07cb7247d81a86bf065b1fe",
+    "path": "example/hyprland.lua",
+    "url": "https://raw.githubusercontent.com/hyprwm/Hyprland/988b94362e2700b4b07cb7247d81a86bf065b1fe/example/hyprland.lua",
+    "sha256": "5553823a068db8b7a8a8db08fdb27c26fd5fda7e6f4a3b3cf059c0829dfb1148"
+  },
+  {
+    "file": "hyde-fast.lua",
+    "repository": "HyDE-Project/HyDE",
+    "revision": "fa2fd57afc7203b1b5653d3271f3a57ea3873f97",
+    "path": "Configs/.local/share/hypr/lua/animations/fast.lua",
+    "url": "https://raw.githubusercontent.com/HyDE-Project/HyDE/fa2fd57afc7203b1b5653d3271f3a57ea3873f97/Configs/.local/share/hypr/lua/animations/fast.lua",
+    "sha256": "081a86b65a7c58c525f9cf2cfc322fc41ec1e7721d632fe475e85aef84ce3a0e"
+  },
+  {
+    "file": "hyde-optimized.lua",
+    "repository": "HyDE-Project/HyDE",
+    "revision": "fa2fd57afc7203b1b5653d3271f3a57ea3873f97",
+    "path": "Configs/.local/share/hypr/lua/animations/optimized.lua",
+    "url": "https://raw.githubusercontent.com/HyDE-Project/HyDE/fa2fd57afc7203b1b5653d3271f3a57ea3873f97/Configs/.local/share/hypr/lua/animations/optimized.lua",
+    "sha256": "8bb679b356d0b1d3e7ff49015d9481e9a03743803f6d266b15de61b4bf72ef03"
+  },
+  {
+    "file": "hyde-end4.lua",
+    "repository": "HyDE-Project/HyDE",
+    "revision": "fa2fd57afc7203b1b5653d3271f3a57ea3873f97",
+    "path": "Configs/.local/share/hypr/lua/animations/end4.lua",
+    "url": "https://raw.githubusercontent.com/HyDE-Project/HyDE/fa2fd57afc7203b1b5653d3271f3a57ea3873f97/Configs/.local/share/hypr/lua/animations/end4.lua",
+    "sha256": "443261fff558d1474cf7dab5b5f9e8ab40ff55557a59dc197717ce72ad1976bf"
+  },
+  {
+    "file": "hyde-macos.lua",
+    "repository": "HyDE-Project/HyDE",
+    "revision": "fa2fd57afc7203b1b5653d3271f3a57ea3873f97",
+    "path": "Configs/.local/share/hypr/lua/animations/macos.lua",
+    "url": "https://raw.githubusercontent.com/HyDE-Project/HyDE/fa2fd57afc7203b1b5653d3271f3a57ea3873f97/Configs/.local/share/hypr/lua/animations/macos.lua",
+    "sha256": "c155255db72f749af1fbf1d5abdffa1de49a15886e704794f443dc0a7cf4967f"
+  },
+  {
+    "file": "hyprmod-bezier_presets.py",
+    "repository": "BlueManCZ/hyprmod",
+    "revision": "b475087af485bf53b33c4529ed616a220b512649",
+    "path": "hyprmod/data/bezier_presets.py",
+    "url": "https://raw.githubusercontent.com/BlueManCZ/hyprmod/b475087af485bf53b33c4529ed616a220b512649/hyprmod/data/bezier_presets.py",
+    "sha256": "b26b20bbe93e0df21f3118522b6be4adf688110d1bd051534460a8ab07b69cda"
+  },
+  {
+    "file": "ml4w-animations-dynamic.lua",
+    "repository": "mylinuxforwork/dotfiles",
+    "revision": "9ead14e78a9bff5f1ae7df3aec7a775730cf4431",
+    "path": "dotfiles/.config/hypr/conf/animations/animations-dynamic.lua",
+    "url": "https://raw.githubusercontent.com/mylinuxforwork/dotfiles/9ead14e78a9bff5f1ae7df3aec7a775730cf4431/dotfiles/.config/hypr/conf/animations/animations-dynamic.lua",
+    "sha256": "464176b2d800da9f952748b2012bc4f2b594f50ef9a5d39c728de71d4e1083f1"
+  },
+  {
+    "file": "ml4w-default.lua",
+    "repository": "mylinuxforwork/dotfiles",
+    "revision": "9ead14e78a9bff5f1ae7df3aec7a775730cf4431",
+    "path": "dotfiles/.config/hypr/conf/animations/default.lua",
+    "url": "https://raw.githubusercontent.com/mylinuxforwork/dotfiles/9ead14e78a9bff5f1ae7df3aec7a775730cf4431/dotfiles/.config/hypr/conf/animations/default.lua",
+    "sha256": "3ae00711a89ea404c27b54de35063561e559800aaf356d1fa663dde6c69c6085"
+  },
+  {
+    "file": "hyprland-LICENSE",
+    "repository": "hyprwm/Hyprland",
+    "revision": "988b94362e2700b4b07cb7247d81a86bf065b1fe",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/hyprwm/Hyprland/988b94362e2700b4b07cb7247d81a86bf065b1fe/LICENSE",
+    "sha256": "e01df754903af0ab26babb317b5f5a62dd95f770b733c5275414dd3245d00ae7"
+  },
+  {
+    "file": "hyde-LICENSE",
+    "repository": "HyDE-Project/HyDE",
+    "revision": "fa2fd57afc7203b1b5653d3271f3a57ea3873f97",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/HyDE-Project/HyDE/fa2fd57afc7203b1b5653d3271f3a57ea3873f97/LICENSE",
+    "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+  },
+  {
+    "file": "hyprmod-LICENSE",
+    "repository": "BlueManCZ/hyprmod",
+    "revision": "b475087af485bf53b33c4529ed616a220b512649",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/BlueManCZ/hyprmod/b475087af485bf53b33c4529ed616a220b512649/LICENSE",
+    "sha256": "a9135462e4136c4072e5eb834b79a925c21ccbbd662c07602e14e4767333afa0"
+  },
+  {
+    "file": "ml4w-LICENSE",
+    "repository": "mylinuxforwork/dotfiles",
+    "revision": "9ead14e78a9bff5f1ae7df3aec7a775730cf4431",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/mylinuxforwork/dotfiles/9ead14e78a9bff5f1ae7df3aec7a775730cf4431/LICENSE",
+    "sha256": "b98fbb37db5b23bc5cfdcd16793206a5a7120a7b01f75374e5e0888376e4691c"
+  }
+]

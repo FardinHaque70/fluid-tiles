@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(FluidTiles VERSION 0.5.3 LANGUAGES CXX)
+project(FluidTiles VERSION 0.5.4 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
@@ -15,6 +15,7 @@ find_package(KF6ColorScheme REQUIRED)
 find_package(KF6WidgetsAddons REQUIRED)
 find_package(KDecoration3 REQUIRED)
 find_package(KWayland REQUIRED)
+find_package(LibTaskManager REQUIRED)
 find_package(Wayland REQUIRED COMPONENTS Client)
 
 add_library(fluidtiles MODULE src/effect.cpp src/effect.h src/core.h src/settings.h src/appearance.h src/appearance.cpp)
@@ -29,16 +30,27 @@ target_link_libraries(fluidbootstrap PRIVATE KWin::kwin Qt6::Qml)
 set_target_properties(fluidbootstrap PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bootstrap")
 add_executable(fluidtiles-settings tools/settings.cpp)
 target_link_libraries(fluidtiles-settings PRIVATE Qt6::Widgets KF6::KCMUtils KF6::CoreAddons)
+add_library(kcm_fluidtiles MODULE src/settingsmodule.cpp src/windowpicker.cpp src/windowpicker.h src/settingsmodule.qrc package/contents/ui/config.ui)
+set_target_properties(kcm_fluidtiles PROPERTIES PREFIX "" AUTOUIC ON AUTORCC ON AUTOUIC_SEARCH_PATHS "${CMAKE_SOURCE_DIR}/package/contents/ui")
+target_link_libraries(kcm_fluidtiles PRIVATE Qt6::Widgets Qt6::DBus KF6::KCMUtils KF6::ConfigGui KF6::WidgetsAddons PW::LibTaskManager)
+install(TARGETS kcm_fluidtiles DESTINATION ${KDE_INSTALL_PLUGINDIR}/kwin/effects/configs)
 add_custom_target(fluidtiles-package ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/package/contents/native/kwin/effects/plugins" "${CMAKE_BINARY_DIR}/package/contents/ui/bootstrap"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/package" "${CMAKE_BINARY_DIR}/package"
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:fluidtiles>" "${CMAKE_BINARY_DIR}/package/contents/native/kwin/effects/plugins/"
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:fluidbootstrap>" "${CMAKE_BINARY_DIR}/package/contents/ui/bootstrap/"
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:fluidtiles-settings>" "${CMAKE_BINARY_DIR}/package/contents/native/"
-    DEPENDS fluidtiles fluidbootstrap fluidtiles-settings)
+    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:kcm_fluidtiles>" "${CMAKE_BINARY_DIR}/package/contents/native/"
+    DEPENDS fluidtiles fluidbootstrap fluidtiles-settings kcm_fluidtiles)
 
 add_executable(fluidtiles-demo tools/demo.cpp)
 target_link_libraries(fluidtiles-demo PRIVATE Qt6::Widgets)
+# Optional native panel fixture for the isolated work-area regression.
+find_package(LayerShellQt QUIET)
+if(TARGET LayerShellQt::Interface)
+    add_executable(fluidtiles-panel tools/panel.cpp)
+    target_link_libraries(fluidtiles-panel PRIVATE Qt6::Widgets LayerShellQt::Interface)
+endif()
 add_executable(fluidtiles-capture tools/capture.cpp)
 target_link_libraries(fluidtiles-capture PRIVATE Qt6::Gui Qt6::DBus)
 add_executable(fluidtiles-input tools/input.cpp)

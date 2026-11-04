@@ -160,6 +160,7 @@ def install():
         shutil.copytree(source,stage/"versions"/revision)
         metadata=json.loads((stage/"metadata.json").read_text())
         metadata["X-FluidTiles-Revision"]=revision
+        metadata["X-KDE-ConfigModule"]=str(dest/"versions"/revision/"contents/native/kcm_fluidtiles.so")
         (stage/"metadata.json").write_text(json.dumps(metadata,indent=2)+"\n")
         if dest.exists():shutil.rmtree(dest)
         stage.rename(dest)

@@ -7,15 +7,19 @@
 #include <QMessageBox>
 #include <KCMultiDialog>
 #include <KPluginMetaData>
+#include <QStandardPaths>
+#include <QPluginLoader>
 
 int main(int argc,char **argv) {
     QApplication app(argc,argv);
     app.setApplicationName("fluidtiles-settings");
     app.setApplicationDisplayName("Fluid Tiles Settings");
     app.setDesktopFileName("org.fluidtiles.Settings");
-    const auto metadata=KPluginMetaData::findPluginById("kwin/effects/configs","kcm_kwin4_genericscripted");
+    const auto path=QStandardPaths::locate(QStandardPaths::GenericDataLocation,"kwin/scripts/fluidtiles-controller/metadata.json");
+    const auto package=KPluginMetaData::fromJsonFile(path);
+    const auto metadata=KPluginMetaData(QPluginLoader(package.value("X-KDE-ConfigModule")).fileName());
     if (!metadata.isValid()) {
-        QMessageBox::critical(nullptr,"Fluid Tiles Settings","KDE's KWin script configuration module could not be found.");
+        QMessageBox::critical(nullptr,"Fluid Tiles Settings","The Fluid Tiles settings module could not be found. Reinstall the package.");
         return 1;
     }
     KCMultiDialog dialog;

@@ -69,6 +69,7 @@ int main(int argc, char **argv) {
     else if (kind=="modal") demo.setWindowModality(Qt::ApplicationModal);
     else if (kind=="bounded") demo.setMaximumSize(600,400);
     else if (kind=="wide-minimum") demo.setMinimumSize(950,200);
+    else if (kind=="single-bounded") demo.setMaximumWidth(1580);
     else if (kind=="large-minimum") demo.setMinimumSize(1450,900);
     else if (kind=="large-opening") demo.resize(app.primaryScreen()->availableGeometry().size()-QSize(20,20));
     else if (kind=="csd-system-move") { demo.setWindowFlag(Qt::FramelessWindowHint);demo.setSystemMoveTest(); }

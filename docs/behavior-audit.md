@@ -1,5 +1,41 @@
 # Fluid Tiles behavior audit
 
+## Version 0.5.4 single-window expansion
+
+The user requested an enabled-by-default option for a lone window to fill the
+desktop, then explicitly chose to keep KDE panels visible. This is a tiled
+presentation policy per output/desktop/Activity group, not native fullscreen or
+native maximization. It uses KWin's `MaximizeArea`, suppressing only the lone
+tile's outer gap, custom outline and owned corner radius. Ordinary floating and
+ignored windows keep their own presentation and focus; they do not count toward
+the tiled tree. A second eligible tile restores normal spacing and appearance.
+Layer-shell surfaces are explicitly excluded from appearance even when KWin
+reports them as normal windows with an application ID outside the presets.
+
+References re-inspected at the pinned revisions below: Hyprland's
+`CWindowTarget::updatePos` obtains workspace-specific gaps and its monitor work
+area separately from fullscreen handling, and supports a separate single-window
+aspect-ratio policy. Dwindle's `recalculate` short-circuits for native fullscreen.
+Krohnkite's complete `kwindriver.ts::addWindow` → `shouldIgnore` / `shouldFloat`
+path and `res/config.xml` were checked; it has separate `soleWindowWidth/Height`
+(100%), `soleWindowNoGaps` (false), and `soleWindowNoBorders` (false) defaults.
+The new default and bundled visual suppression are this user's requested policy,
+not a claim of identical upstream defaults.
+
+KWin adaptation: tiled membership and native restore geometry remain owned by
+the existing controller. Fitting an incoming second window predicts restored
+border extents and normal gaps before accepting it. A restrictive maximum that
+can fill the ordinary tile but not the whole work area keeps its valid ordinary
+tile. Source revisions invalidate temporary captures when presentation mode
+changes; previous/new outline bounds are damaged. The setting cancels an active
+tiling interaction before relayout, and native full/max/min, floating, disable
+and unload release expanded presentation through the existing ownership path.
+
+The targeted disposable suite uses a real layer-shell panel with an exclusive
+zone; its optional fixture requires LayerShellQt development files. The panel
+and input helpers require `WAYLAND_DISPLAY=fluidtiles-test`. The historical
+regressions explicitly disable the option to preserve their prior baseline.
+
 Audit date: 2026-11-03. Automated interactive tests use a disposable KWin compositor and test applications. The user has separately enabled the installed package for live testing. Hyprland is the gold standard for tiling decisions; Krohnkite supplies the KDE integration and exclusion reference.
 
 ## References actually inspected

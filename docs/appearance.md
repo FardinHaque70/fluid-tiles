@@ -1,5 +1,11 @@
 # Integrated appearance
 
+With **Expand a single tiled window** enabled (the default), a lone tile fills
+the usable desktop with no outer gap, custom outline or owned corner rounding.
+Panels remain visible. The configured appearance returns when another tile
+joins, or when the option is disabled. Floating windows retain their own
+appearance. Application-drawn headers and transparency remain application-owned.
+
 Fluid Tiles 0.5 adds outlines, corner clipping and native titlebar control to the same controller that owns tiling and animation. Open **Fluid Tiles Settings → Appearance**; reopen an already-running settings window after upgrading to load the new tab. Saving settings never enables the controller.
 
 | Setting | Default | Meaning |

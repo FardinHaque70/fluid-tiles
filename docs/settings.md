@@ -1,6 +1,6 @@
 # Fluid Tiles settings
 
-Version 0.3 adds a native KDE configuration dialog, using the [standard KWin Script configuration mechanism](https://develop.kde.org/docs/plasma/kwin/#configuration). The same form is used by the app-menu entry and the KWin Scripts configuration button.
+The native KDE configuration dialog is shared by the app-menu entry and the KWin Scripts configuration button. Its packaged configuration module binds the existing schema to KDE's standard settings controls.
 
 ## Opening the dialog
 
@@ -17,6 +17,7 @@ The settings window itself is excluded from tiling. Opening, saving, cancelling 
 | Gap between windows | 10 px | Inner gap, 0–80 desktop pixels, with display scaling applied. |
 | Gap around the layout | 10 px | Outer gap, 0–80 desktop pixels, with display scaling applied. |
 | Animation responsiveness | 24 | Range 8–60. Higher values settle faster; KDE's global animation speed remains effective. |
+| Expand a single tiled window | On | A lone tile fills the usable desktop without outer gaps, outlines or rounded corners. Panels remain visible. A second tile restores configured spacing and appearance. Floating and ignored windows do not count as tiles. Native maximum-size limits can retain the ordinary inset tile. |
 | Application ID / class / instance | Krohnkite KDE presets | Ignore a window if either its application/class identifier or instance matches a pattern. |
 | Window title | Empty | Ignore matching titles; membership updates if a client changes its title. |
 | Window role | `quake` | Ignore matching roles when the application provides one. Many Wayland clients do not provide roles. |
@@ -32,6 +33,10 @@ Version 0.5 adds three independently switchable sections in the Appearance tab: 
 ## Ignore patterns
 
 Enter **one pattern per line**. Matching is case-insensitive and covers the whole property. `*` matches any text, including `/`; `?` matches one character. Blank lines are skipped, leading/trailing whitespace is ignored, and absent properties do not match. These are wildcard patterns, not regular expressions. A match in any of the three fields is enough to exclude the window.
+
+Each ignore field, including appearance exclusions, has a **Pick a window…** button. Search the open-window list, select a window, then choose **Add rule**. Application fields offer the actual KWin application/class identifier and a separate instance when available; title and role fields use their corresponding property. Missing properties cannot be added. Picking appends a literal rule, preserves existing entries, and skips duplicates. Wildcard characters in picked values are escaped with character classes. You can edit the resulting rule before Apply; cancelling or reloading discards unsaved additions. The picker works while Fluid Tiles is disabled.
+
+The list comes from KDE's Wayland window task model, and the selected window's properties come from KWin's `getWindowInfo` D-Bus method. It does not depend on the native tiler. This is a settings convenience; admission checks, pattern matching and Krohnkite-derived defaults remain unchanged.
 
 Application examples:
 
@@ -63,7 +68,7 @@ exclusions**, and retain it under **Ignored windows**. The two exclusion lists
 are independent. This is a saved preference; restoring appearance defaults
 restores the preset exclusion.
 
-The schema is `package/contents/config/main.xml`, with values in `kwinrc` under `[Script-fluidtiles-controller]`: `InnerGap`, `OuterGap`, `SpringFrequency`, `IgnoreApplications`, `IgnoreTitles`, and `IgnoreRoles`. Use the dialog for multiline rules so KConfig handles their serialization.
+The schema is `package/contents/config/main.xml`, with values in `kwinrc` under `[Script-fluidtiles-controller]`: `InnerGap`, `OuterGap`, `SpringFrequency`, `ExpandSingleWindow`, `IgnoreApplications`, `IgnoreTitles`, and `IgnoreRoles`. Use the dialog for multiline rules so KConfig handles their serialization.
 
 The installer migrates the earlier shared appearance toggle and titlebar choice once into `OutlinesEnabled`, `RoundedCornersEnabled`, `TitlebarControlEnabled` and `TitlebarScope` (0 tiled, 1 tiled and floating). Existing independent choices win. A previously disabled master leaves all three off; Keep titlebars leaves titlebar control off.
 

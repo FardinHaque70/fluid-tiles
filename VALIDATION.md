@@ -1,4 +1,48 @@
-# Fluid Tiles 0.5.3 validation
+# Fluid Tiles 0.5.4 validation
+
+Version 0.5.4 adds **Expand a single tiled window**, enabled by default in
+Layout & animation. A lone tile fills KWin's usable work area, preserving panel
+reservations, without outer gaps, custom outlines or owned corner rounding.
+Native fullscreen/maximized flags remain unchanged. A second tile restores
+configured spacing and appearance. Floating/ignored windows retain focus and
+do not count toward the tiled tree. Restrictive native maxima can retain an
+ordinary inset tile.
+
+- Twelve targeted native workflows passed at **100%, 145% and 200% scaling** on
+  the final binary. A real layer-shell panel reserves 48 logical pixels; pixel
+  checks confirm the panel remains visible and tile content begins immediately
+  below it. Layer-shell surfaces receive no custom application appearance.
+- Coverage includes the real KDE settings default and live toggle, second-window
+  opening/closure, infeasible insertion, slow clients, floating dialog focus,
+  explicit floating/retiling, full/max/min round trips, desktop grouping,
+  temporary single-tile resize, setting changes during resize, disable/unload
+  restoration, maximum-size fallback, client headers and idle rendering.
+- The existing full baseline, **28 appearance cases**, singleton-resize and
+  Desktop Slide regressions, nine centered-float cases, opening-animation suite
+  and ten pair-orientation workflows passed at 145% with the new option
+  explicitly disabled. Core tests (134,769 assertions), configuration migration
+  checks, Python syntax and build checks passed.
+- Installed and verified live as **0.5.4**, preserving activation, all existing
+  saved preferences (including authentication-dialog appearance) and shortcut
+  bindings. The loaded immutable binary matches the tested hash.
+
+Native binary SHA-256:
+`ed7e07aa8629e3073e220a904b336a6e8ec809bf5d60bbd9f9c440d34081512c`.
+
+Evidence: `test-results/single-{100,145,200}/single.json`,
+`test-results/054-baseline-145/integration.json`,
+`test-results/054-appearance-145/appearance.json`,
+`test-results/054-interactions-145/interactions.json`,
+`test-results/054-float-145/float-center.json`,
+`test-results/054-opening-145/opening.json`,
+`test-results/054-pairs-145/pairs.json`, and
+`test-results/live-054-deployed.json`. These are local generated artifacts.
+Reproduce the targeted suite with
+`FLUIDTILES_TEST_CONTROL=1 FLUIDTILES_TEST_DESKTOP_EFFECTS=1 FLUIDTILES_TEST_SINGLE=1 FLUIDTILES_TEST_SCALE=1.45 FLUIDTILES_TEST_SESSION=test-session-single FLUIDTILES_TEST_RESULTS=test-results/single-145 python3 tests/integration.py`.
+The panel fixture requires optional LayerShellQt development files at build time.
+Virtual-output validation does not establish physical 144 Hz smoothness.
+
+## Fluid Tiles 0.5.3 validation
 
 Version 0.5.3 combines preferred side-by-side automatic two-window layouts with the separately requested centered entrance animation for newly opened windows.
 
@@ -121,3 +165,9 @@ Native binary SHA-256: `7e1504647235833d1331f93064e42501a1230244154c50917447652e
 Installed and independently verified live as **0.5.3**, enabled with the same tested binary and appearance renderer available. Activation, saved preferences and shortcuts were preserved. Evidence: `test-results/live-053-deployed.json` and `test-results/opening-live-verified.json`. No fake input was used on the host desktop.
 
 Reproduce with `FLUIDTILES_TEST_CONTROL=1 FLUIDTILES_TEST_DESKTOP_EFFECTS=1 FLUIDTILES_TEST_OPENING=1 FLUIDTILES_TEST_SCALE=1.45 FLUIDTILES_TEST_SESSION=test-session/opening FLUIDTILES_TEST_RESULTS=test-results/opening-145 python3 tests/integration.py`. The native opening grab, final-geometry request path, and temporary transformed-presentation input limitation are documented in [the behavior audit](docs/behavior-audit.md). These virtual-output checks do not establish physical 144 Hz smoothness.
+
+## Settings window pickers (2026-11-04)
+
+Removed the Apply and display-scaling subtexts. All four exclusion fields now open a searchable KDE window picker, backed by the packaged settings KCModule. The settings-only disposable KWin audit passed all 12 groups, including real Wayland window/property lookup with tiling enabled and disabled, search, missing roles, unsaved cancellation, save/reload/defaults and preserved activation. Literal wildcard escaping, duplicate suppression and existing-rule preservation are covered by the settings executable. Core CTest and `git diff --check` passed. Reports and inspected screenshots: `test-results/picker-final/`.
+
+The settings UI alone was updated in the installed 0.5.4 package. A module-load smoke test passed; `kwinrc` remained byte-for-byte unchanged, runtime tiling stayed enabled, and the running tiler payload was retained. Evidence: `test-results/picker-final/live-settings-update.json`. No host input was injected.

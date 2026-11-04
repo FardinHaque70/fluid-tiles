@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Exercise KDE's actual generic script KCModule, not a replacement form.
+// Exercise the packaged KCModule used by both settings entry points.
 #include "settings.h"
+#include "pickerrules.h"
 #include <QApplication>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
@@ -9,6 +10,14 @@
 #include <KColorButton>
 #include <QPlainTextEdit>
 #include <QTabWidget>
+#include <QPushButton>
+#include <QListView>
+#include <QDialog>
+#include <QLabel>
+#include <QElapsedTimer>
+#include <QThread>
+#include <QPluginLoader>
+#include <QLineEdit>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDir>
@@ -32,12 +41,25 @@ int main(int argc,char **argv) {
         const auto args=app.arguments();
         auto config=KSharedConfig::openConfig("kwinrc");
         const bool wasEnabled=KConfigGroup(config,"Plugins").readEntry("fluidtiles-controllerEnabled",false);
-        const auto metadata=KPluginMetaData::findPluginById("kwin/effects/configs","kcm_kwin4_genericscripted");
-        require(metadata.isValid(),"KDE generic script config module not found");
+        const auto path=QStandardPaths::locate(QStandardPaths::GenericDataLocation,"kwin/scripts/fluidtiles-controller/metadata.json");
+        const auto package=KPluginMetaData::fromJsonFile(path);
+        // Resolve exactly as KDE's KPluginModel::findConfig does.
+        const auto metadata=KPluginMetaData(package.rawData(),QPluginLoader(package.value("X-KDE-ConfigModule")).fileName());
+        require(metadata.isValid(),"Fluid Tiles settings module not found");
         auto module=std::unique_ptr<KCModule>(KCModuleLoader::loadModule(metadata,nullptr,{"fluidtiles-controller","KWin/Script"}));
         require(bool(module),"KDE could not instantiate Fluid Tiles settings");
         module->load();
         auto form=module->widget();
+        require(!form->findChild<QLabel *>("applyHelp") && !form->findChild<QLabel *>("unitsHelp"),"Removed subtexts are still present");
+        for (auto name : {"pickIgnoreApplications","pickIgnoreTitles","pickIgnoreRoles","pickAppearanceIgnoredApplications"})
+            require(form->findChild<QPushButton *>(name),"Missing window picker");
+        const auto literal=QStringLiteral("Editor [draft] * ?");
+        Fluid::IgnorePatterns picked;
+        picked.setText(Fluid::literalWindowRule(literal));
+        require(picked.matches(literal) && !picked.matches("Editor d anything x"),"Picked values are not literal rules");
+        require(Fluid::appendWindowRule("existing\n",literal)=="existing\n"+Fluid::literalWindowRule(literal),"Picker replaced existing rules");
+        require(Fluid::appendWindowRule("EXISTING","existing")=="EXISTING", "Picker duplicated an existing rule");
+        require(Fluid::appendWindowRule("existing","")=="existing" && Fluid::literalWindowRule("bad\nrule").isEmpty(),"Picker accepted an absent or multiline property");
         auto spin=[&](const char *name) {
             auto w=form->findChild<QDoubleSpinBox *>(name);require(w,"Missing numeric settings field");return w;
         };
@@ -48,6 +70,7 @@ int main(int argc,char **argv) {
             auto w=form->findChild<QGroupBox *>("kcfg_"+QString(key));require(w,"Missing independent appearance section");return w;
         };
         auto apply=[&](const QJsonObject &values) {
+            if (values.contains("ExpandSingleWindow")) form->findChild<QCheckBox *>("kcfg_ExpandSingleWindow")->setChecked(values.value("ExpandSingleWindow").toBool());
             for (auto key : {"InnerGap","OuterGap","SpringFrequency","BorderWidth","CornerRadius"}) if (values.contains(key))
                 spin(qPrintable("kcfg_"+QString(key)))->setValue(values.value(key).toDouble());
             for (auto key : {"IgnoreApplications","IgnoreTitles","IgnoreRoles","AppearanceIgnoredApplications"}) if (values.contains(key))
@@ -69,11 +92,59 @@ int main(int argc,char **argv) {
             }
             QCoreApplication::processEvents();module->save();
         };
-        if (args.value(1)=="apply") {
+        if (args.value(1)=="picker") {
+            auto wait=[&](auto predicate) {
+                QElapsedTimer timer;timer.start();
+                while (!predicate() && timer.elapsed()<6000) {QCoreApplication::processEvents();QThread::msleep(10);}
+                require(predicate(),"Timed out waiting for the real window picker");
+            };
+            form->show();
+            const auto title=args.value(2);
+            for (const auto &entry : {QPair{"pickIgnoreApplications","kcfg_IgnoreApplications"},QPair{"pickIgnoreTitles","kcfg_IgnoreTitles"},
+                    QPair{"pickIgnoreRoles","kcfg_IgnoreRoles"},QPair{"pickAppearanceIgnoredApplications","kcfg_AppearanceIgnoredApplications"}}) {
+                auto field=text(entry.second);
+                const auto saved=field->toPlainText();
+                form->findChild<QPushButton *>(entry.first)->click();
+                auto picker=form->findChild<QDialog *>("windowPicker");require(picker,"Picker did not open");
+                auto list=picker->findChild<QListView *>("openWindows");
+                QModelIndex selected;
+                wait([&] {
+                    for (int row=0;row<list->model()->rowCount();++row) {
+                        auto index=list->model()->index(row,0);
+                        if (index.data().toString()==title) {selected=index;return true;}
+                    }
+                    return false;
+                });
+                picker->findChild<QLineEdit *>("windowPickerSearch")->setText(title);
+                require(list->model()->rowCount()==1,"Picker search did not filter the open windows");
+                selected=list->model()->index(0,0);
+                list->setCurrentIndex(selected);
+                auto values=picker->findChild<QComboBox *>("windowRuleValues");
+                auto add=picker->findChild<QPushButton *>("addWindowRule");
+                if (QString(entry.first)=="pickIgnoreRoles") {
+                    wait([&] {return !picker->findChild<QLabel *>("windowPickerStatus")->text().contains("Reading");});
+                    require(values->count()==0 && !add->isEnabled(),"Absent Wayland role offered a rule");
+                    picker->reject();
+                } else {
+                    wait([&] {return add->isEnabled();});
+                    const auto value=values->currentData().toString();
+                    require(value==(QString(entry.first)=="pickIgnoreTitles" ? title : QStringLiteral("fluidtiles-demo")),"Picker queried the wrong window property");
+                    const auto expected=Fluid::appendWindowRule(saved,value);
+                    if (!args.value(3).isEmpty() && QString(entry.first)=="pickIgnoreApplications")
+                        require(picker->grab().save(QDir(args.value(3)).filePath("settings-window-picker.png")),"Could not capture the window picker");
+                    add->click();require(field->toPlainText()==expected,"Picker did not append its selected value");
+                    require(module->needsSave(),"Picked rule did not mark settings changed");
+                }
+                QCoreApplication::sendPostedEvents(nullptr,QEvent::DeferredDelete);
+                // Reload discards the unsaved picked value, like Cancel.
+                module->load();require(field->toPlainText()==saved,"Unsaved picker rule leaked into stored preferences");
+            }
+            std::cout<<"Real window pickers passed\n";
+        } else if (args.value(1)=="apply") {
             const auto values=QJsonDocument::fromJson(args.value(2).toUtf8()).object();
             apply(values);
         } else {
-            QJsonObject values{{"InnerGap",22.5},{"OuterGap",18.5},{"SpringFrequency",32},
+            QJsonObject values{{"InnerGap",22.5},{"OuterGap",18.5},{"SpringFrequency",32},{"ExpandSingleWindow",false},
                 {"IgnoreApplications","org.example.*\nFirefox"},{"IgnoreTitles","*Picture-in-Picture*"},{"IgnoreRoles","pop-up*"},
                 {"OutlinesEnabled",false},{"RoundedCornersEnabled",true},{"TitlebarControlEnabled",false},{"BorderWidth",3.5},{"CornerRadius",12.0},{"TitlebarScope",1},
                 {"UseSystemBorderColors",false},{"ActiveBorderColor","#124488"},{"InactiveBorderColor","#556677"},
@@ -82,6 +153,7 @@ int main(int argc,char **argv) {
             config->reparseConfiguration();
             KConfigGroup group(config,"Script-fluidtiles-controller");
             require(group.readEntry("InnerGap",0.0)==22.5,"UI did not save gap");
+            require(!group.readEntry("ExpandSingleWindow",true),"UI did not save the single-window option");
             require(group.readEntry("IgnoreApplications",QString{})==values.value("IgnoreApplications").toString(),"UI did not save multiline app rules");
             require(group.readEntry("IgnoreTitles",QString{})==values.value("IgnoreTitles").toString(),"UI did not save title rules");
             require(group.readEntry("IgnoreRoles",QString{})==values.value("IgnoreRoles").toString(),"UI did not save role rules");
@@ -96,6 +168,7 @@ int main(int argc,char **argv) {
             require(spin("kcfg_BorderWidth")->value()==3.5 && form->findChild<QComboBox *>("kcfg_TitlebarScope")->currentIndex()==1,"UI did not reload appearance fields");
             require(form->findChild<KColorButton *>("kcfg_ActiveBorderColor")->color()==QColor("#124488"),"UI did not reload color control");
             module->defaults();
+            require(form->findChild<QCheckBox *>("kcfg_ExpandSingleWindow")->isChecked(),"Single-window expansion must default on");
             for (auto key : {"OutlinesEnabled","RoundedCornersEnabled","TitlebarControlEnabled"}) require(section(key)->isChecked(),"Appearance section default must be enabled");
             require(spin("kcfg_BorderWidth")->value()==2 && spin("kcfg_CornerRadius")->value()==8,"Appearance dimension defaults incorrect");
             require(form->findChild<QComboBox *>("kcfg_TitlebarScope")->currentIndex()==0,"Titlebar default must hide only tiles");
@@ -118,6 +191,7 @@ int main(int argc,char **argv) {
                 require(form->grab().save(images.filePath("settings-appearance.png")),"Could not capture appearance settings");
             }
             module->save();
+            if (qEnvironmentVariableIntValue("FLUIDTILES_TEST_SINGLE")!=1) apply(QJsonObject{{"ExpandSingleWindow",false}});
             // Keep the historical compositor suite on its explicit baseline
             // profile after proving the real form's new defaults above.
             if (qEnvironmentVariableIntValue("FLUIDTILES_BASELINE")==1) apply(QJsonObject{{"AppearanceEnabled",false}});

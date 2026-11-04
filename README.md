@@ -4,15 +4,16 @@ Dwindle tiling, smooth window transitions and integrated appearance for **KDE Pl
 
 Fluid Tiles combines a native KWin tiler with configurable outlines, rounded corners and titlebar control. It takes inspiration from Hyprland's tiling and motion, with Krohnkite as the KDE integration reference.
 
-**Version 0.5.3 · Experimental · GPL-3.0-or-later**
+**Version 0.5.4 · Experimental · GPL-3.0-or-later**
 
 ## Features
 
 - **Dynamic tiling:** a Dwindle tree with focus-based insertion, drag-to-swap and edge insertion. Automatic two-window layouts prefer side-by-side columns when application size limits allow.
+- **Single-window mode:** enabled by default, a lone tile fills the desktop while keeping panels visible. Configured gaps, outlines and rounding return when a second tile opens.
 - **Responsive resizing:** drag a divider or use Meta + right-drag to adjust splits. A single tile can resize freely while held, then animate back on release.
 - **Continuous motion:** interruptible spring animations for layout changes, centered entrances for new windows and animated centering when toggling a tile to floating.
 - **Integrated appearance:** independently configurable outlines, rounded corners and supported titlebar hiding, with KDE theme colors or custom active/inactive colors.
-- **Window rules:** configurable gaps and application, title and role exclusions. Appearance exclusions are separate from tiling exclusions; ordinary floating windows stay above tiles.
+- **Window rules:** configurable gaps and application, title and role exclusions, with a searchable window picker for adding rules. Appearance exclusions are separate from tiling exclusions; ordinary floating windows stay above tiles.
 - **Restoration:** disabling Fluid Tiles restores the window geometry, decoration and layer state it owns.
 
 ## Compatibility
@@ -23,7 +24,7 @@ The current validation focuses on a single-monitor Wayland setup. Broader multi-
 
 ## Installation
 
-Install a C++20 compiler, CMake 3.25+, Python 3 and the development packages for matching KWin, Qt 6, Extra CMake Modules, KDE Frameworks 6 (GlobalAccel, Config, KCMUtils, ColorScheme and WidgetsAddons), KDecoration3, KWayland and Wayland. The controller also uses KDE's `qdbus6`, `kreadconfig6` and `kwriteconfig6` tools.
+Install a C++20 compiler, CMake 3.25+, Python 3 and the development packages for matching KWin, Qt 6, Extra CMake Modules, KDE Frameworks 6 (GlobalAccel, Config, KCMUtils, ColorScheme and WidgetsAddons), KDecoration3, KWayland, Plasma Workspace's task manager library (`LibTaskManager`) and Wayland. The controller also uses KDE's `qdbus6`, `kreadconfig6` and `kwriteconfig6` tools. Optional LayerShellQt development files enable the panel fixture used by the single-window integration tests.
 
 ```bash
 git clone https://github.com/FardinHaque70/fluid-tiles.git
@@ -62,7 +63,7 @@ Open **Fluid Tiles Settings** from the application launcher, or run:
 python3 tools/control.py configure
 ```
 
-Adjust gaps, animation responsiveness, ignored windows and the three independent appearance sections: **Outlines**, **Rounded corners** and **Titlebar control**. Changes apply live; the settings dialog also works while tiling is disabled. Application-drawn headers remain application-controlled.
+Adjust gaps, animation responsiveness, **Expand a single tiled window**, ignored windows and the three independent appearance sections: **Outlines**, **Rounded corners** and **Titlebar control**. Changes apply live; the settings dialog also works while tiling is disabled. Application-drawn headers remain application-controlled.
 
 See [settings and window rules](docs/settings.md) and [appearance behavior](docs/appearance.md).
 
@@ -92,6 +93,8 @@ See the [validation record](VALIDATION.md), [behavior audit](docs/behavior-audit
 
 ## Acknowledgments and license
 
-[Hyprland](https://github.com/hyprwm/Hyprland) provides the behavioral reference; [Krohnkite](https://github.com/beefsack/Krohnkite) informs KDE integration and exclusion defaults. Fluid Tiles is a native KWin implementation and does not vendor either project's source.
+[Hyprland](https://github.com/hyprwm/Hyprland) provides the behavioral reference; [Krohnkite](https://github.com/beefsack/Krohnkite) informs KDE integration and exclusion defaults. Fluid Tiles' tiler is a native KWin implementation.
+
+Upstream animation reference configurations are retained with their original licenses and a [source manifest](package/contents/data/animations/upstream/manifest.json). They are reference data; the current release uses the spring animations described above.
 
 Licensed under the [GNU General Public License, version 3 or later](LICENSE).

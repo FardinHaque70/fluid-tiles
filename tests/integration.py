@@ -24,6 +24,7 @@ from floating_behaviors import run_floating_audit
 from interaction_behaviors import run_interaction_audit
 from pair_behaviors import run_pair_audit
 from opening_behaviors import run_opening_audit
+from single_behaviors import run_single_audit
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / os.environ.get("FLUIDTILES_TEST_RESULTS","test-results")
@@ -120,9 +121,9 @@ def inner():
         # The runtime must use the same identity and setting as System Settings.
         assert subprocess.check_output(["kreadconfig6","--file","kwinrc","--group","Plugins",
             "--key","fluidtiles-controllerEnabled"],text=True).strip()=="true"
+        wait_for(lambda: status()["enabled"])
         assert subprocess.check_output(["qdbus6","org.kde.KWin","/Scripting",
             "org.kde.kwin.Scripting.isScriptLoaded","fluidtiles-loader-trial"],text=True).strip()=="false"
-        wait_for(lambda: status()["enabled"])
         env={**os.environ,"QT_QPA_PLATFORM":"wayland","WAYLAND_DISPLAY":"fluidtiles-test",
              "QT_QPA_PLATFORMTHEME":"generic","QT_NO_XDG_DESKTOP_PORTAL":"1"}
         requested_scale=float(os.environ.get("FLUIDTILES_TEST_SCALE","1.45"))
@@ -131,6 +132,9 @@ def inner():
         wait_for(lambda:abs(status()["outputs"][0]["scale"]-requested_scale)<.001)
         (RESULTS/"support.txt").write_text(subprocess.check_output(
             ["qdbus6","org.kde.KWin","/KWin","org.kde.KWin.supportInformation"],text=True))
+        if os.environ.get('FLUIDTILES_TEST_SINGLE')=='1':
+            report=run_single_audit((call,status,wait_for,tiled,settled,ROOT),env,children,log,RESULTS)
+            print(json.dumps(report),flush=True);return
         if os.environ.get('FLUIDTILES_TEST_OPENING')=='1':
             report=run_opening_audit((call,status,wait_for,tiled,settled,ROOT),env,children,log,RESULTS)
             print(json.dumps(report),flush=True);return
@@ -423,6 +427,10 @@ def main():
         (session/name).mkdir(exist_ok=True,mode=0o700)
     (session/"config/kdeglobals").write_text("[KDE]\nAnimationDurationFactor=1\n")
     shutil.copytree(ROOT/"build/package",session/"data/kwin/scripts/fluidtiles-controller",dirs_exist_ok=True)
+    package=session/"data/kwin/scripts/fluidtiles-controller"
+    metadata=json.loads((package/"metadata.json").read_text())
+    metadata["X-KDE-ConfigModule"]=str(package/"contents/native/kcm_fluidtiles.so")
+    (package/"metadata.json").write_text(json.dumps(metadata,indent=2)+'\n')
     (session/"config/kwinrc").write_text("""[Plugins]
 fluidtilesEnabled=false
 fluidtiles-controllerEnabled=true
@@ -450,6 +458,9 @@ GLCore=true
     if os.environ.get("FLUIDTILES_TEST_CONTROL")=="1":
         p=session/"config/kwinrc"
         p.write_text(p.read_text().replace("fluidtiles-controllerEnabled=true","fluidtiles-controllerEnabled=false"))
+    if os.environ.get('FLUIDTILES_TEST_SINGLE')!='1':
+        p=session/'config/kwinrc'
+        p.write_text(p.read_text().replace('[Script-fluidtiles-controller]','[Script-fluidtiles-controller]\nExpandSingleWindow=false'))
     env={**os.environ,"XDG_RUNTIME_DIR":str(session/"runtime"),"XDG_CONFIG_HOME":str(session/"config"),
         "XDG_DATA_HOME":str(session/"data"),"XDG_CACHE_HOME":str(session/"cache"),
         "QT_QPA_PLATFORM":"offscreen",

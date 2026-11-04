@@ -81,13 +81,26 @@ bool Appearance::applies(EffectWindow *w) const {
     if (!m_enabled || !(m_outlinesEnabled || m_roundingEnabled || m_titlebarsEnabled) || !m_error.isEmpty() || !w || w->isDeleted() || !w->window()) return false;
     auto c=w->window();
     if (!c->output() || !effects->screens().contains(c->output())) return false;
-    return c->isClient() && c->pid()>=0 && !c->isInternal() && !c->isPopupWindow() && !c->isSpecialWindow()
+    // Layer-shell panels can report NET::Normal and have arbitrary app IDs.
+    // They remain compositor shell surfaces, never application decorations.
+    return c->isClient() && c->pid()>=0 && !c->inherits("KWin::LayerShellV1Window")
+        && !c->isInternal() && !c->isPopupWindow() && !c->isSpecialWindow()
         && !c->isHidden() && !c->isMinimized() && !c->isFullScreen() && c->maximizeMode()==MaximizeRestore
         && (c->isNormalWindow() || c->isDialog() || c->isUtility()) && c->readyForPainting()
         && !m_ignore.matches(c->resourceClass()) && !m_ignore.matches(c->resourceName());
 }
-double Appearance::border(EffectWindow *w) const {
-    return applies(w) && m_outlinesEnabled && w->window()->output()?PresentationGeometry::thickness(m_width,w->window()->output()->scale()):0;
+bool Appearance::isExpanded(EffectWindow *w) const {
+    const auto it=m_windows.find(w);
+    return it!=m_windows.end() && it->second.expanded;
+}
+void Appearance::setExpanded(EffectWindow *w, bool expanded) {
+    watch(w);
+    auto it=m_windows.find(w);if(it==m_windows.end() || it->second.expanded==expanded)return;
+    it->second.expanded=expanded;++m_sourceRevision;
+    damage(w,w->frameGeometry());
+}
+double Appearance::border(EffectWindow *w, bool normal) const {
+    return applies(w) && (normal || !isExpanded(w)) && m_outlinesEnabled && w->window()->output()?PresentationGeometry::thickness(m_width,w->window()->output()->scale()):0;
 }
 QSizeF Appearance::minimumFrame(EffectWindow *w) const {
     auto c=w->window();
@@ -170,7 +183,7 @@ void Appearance::sync(EffectWindow *w, bool tiled) {
         setPolicy(s,s.originalPolicy);s.policyOwned=false;
     }
     const double limit=std::min(c->width(),c->height())/2;
-    s.writtenRadius=m_roundingEnabled && m_radius>0?BorderRadius(std::min(m_radius,limit)):(s.policyOwned?BorderRadius():s.originalRadius);
+    s.writtenRadius=s.expanded?BorderRadius():(m_roundingEnabled && m_radius>0?BorderRadius(std::min(m_radius,limit)):(s.policyOwned?BorderRadius():s.originalRadius));
     s.changing=true;c->setBorderRadius(s.writtenRadius);s.changing=false;
     if (!s.boundsItem && w->windowItem()) s.boundsItem=std::make_unique<Item>(w->windowItem());
     if (s.boundsItem) {
@@ -206,7 +219,7 @@ PresentationGeometry Appearance::geometry(EffectWindow *w,const QRectF &visual) 
     if (applies(w)) {
         const auto native=w->window()->borderRadius();
         const double radius=std::min(m_radius,std::min(visual.width(),visual.height())/2);
-        p.radius=m_roundingEnabled && m_radius>0?BorderRadius(radius):native;
+        p.radius=isExpanded(w)?BorderRadius():(m_roundingEnabled && m_radius>0?BorderRadius(radius):native);
     }
     return p;
 }
@@ -246,7 +259,7 @@ bool Appearance::prepareShader() {
     return true;
 }
 GLShader *Appearance::clipShader(EffectWindow *w,const QRectF &visual,double scale) {
-    if(!applies(w) || !m_roundingEnabled || m_radius<=0 || !prepareShader())return nullptr;
+    if(!applies(w) || isExpanded(w) || !m_roundingEnabled || m_radius<=0 || !prepareShader())return nullptr;
     const auto actual=w->frameGeometry();
     if(actual.isEmpty())return nullptr;
     const auto p=geometry(w,visual);
@@ -299,7 +312,7 @@ QJsonObject Appearance::status() const {
 }
 QJsonObject Appearance::status(EffectWindow *w,const QRectF &visual) const {
     const auto it=m_windows.find(w);auto c=w->window();const auto p=geometry(w,visual);
-    return {{"applied",applies(w)},{"owned",it!=m_windows.end() && it->second.owned},
+    return {{"applied",applies(w)},{"expanded",isExpanded(w)},{"owned",it!=m_windows.end() && it->second.owned},
         {"titlebarOwned",it!=m_windows.end() && it->second.policyOwned},{"noBorder",c->noBorder()},
         {"policy",int(c->decorationPolicy())},{"titlebarSupported",c->userCanSetNoBorder() && c->isResizable() && (c->isDecorated() || (it!=m_windows.end() && it->second.policyOwned))},
         {"border",p.border},{"frame",rect(p.frame)},{"outer",rect(p.outer())},{"radius",radii(c->borderRadius())}};

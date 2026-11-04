@@ -73,6 +73,16 @@ def run_settings_audit(api,env,children,log,results):
     assert min(w['target'][0] for w in tiled())==0
     normal();report['live_gaps_and_responsiveness']='passed'
 
+    # Real Wayland task enumeration + KWin property queries, also while tiling
+    # is disabled. Picking changes the form only, and never activation.
+    for enabled in (True,False):
+        call('SetEnabled',enabled)
+        subprocess.run([str(root/'build/fluidtiles-settings-tests'),'picker','Fluid Tiles test — Slow C',str(results)],
+            env={**env,'FLUIDTILES_SETTINGS_TEST':'1'},check=True,stdout=log,stderr=log,timeout=35)
+        assert status()['enabled']==enabled
+    call('SetEnabled',True);wait_for(lambda:len(tiled())==3);wait_for(settled)
+    report['window_pickers_enabled_and_disabled']='passed'
+
     source=next(w for w in tiled() if 'Slow C' in w['title']);ident=source['id'];restore=source['restore']
     apply(IgnoreTitles='\n *SLOW C\n')
     wait_for(lambda:get(ident)['ignored'] and not get(ident)['tiled']);wait_for(lambda:is_restored(ident,restore))

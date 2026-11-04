@@ -155,15 +155,17 @@ void FluidTiles::reconfigure(ReconfigureFlags) {
     const double gap=std::clamp(config.readEntry("InnerGap",10.0),0.0,80.0);
     const double outer=std::clamp(config.readEntry("OuterGap",10.0),0.0,80.0);
     const double omega=std::clamp(config.readEntry("SpringFrequency",24.0),8.0,60.0);
+    const bool expandSingle=config.readEntry("ExpandSingleWindow",true);
     const auto applications=config.readEntry("IgnoreApplications",Fluid::defaultIgnoredApplications);
     const auto titles=config.readEntry("IgnoreTitles",QString{});
     const auto roles=config.readEntry("IgnoreRoles",Fluid::defaultIgnoredRoles);
-    const bool changed=gap!=m_gap || outer!=m_outerGap || omega!=m_omega || applications!=m_ignoreApplicationText
+    const bool changed=expandSingle!=m_expandSingleWindow || gap!=m_gap || outer!=m_outerGap || omega!=m_omega || applications!=m_ignoreApplicationText
         || titles!=m_ignoreTitleText || roles!=m_ignoreRoleText;
     const bool appearanceGeometry=m_appearance->configure(config);
     if (!changed && !appearanceGeometry) return;
     if (m_drag) endDrag(false);
     m_gap=gap;m_outerGap=outer;m_omega=omega;
+    m_expandSingleWindow=expandSingle;
     m_ignoreApplicationText=applications;m_ignoreTitleText=titles;m_ignoreRoleText=roles;
     m_ignoreApplications.setText(applications);m_ignoreTitles.setText(titles);m_ignoreRoles.setText(roles);
     if (m_clock.isValid()) scheduleReconcile();
@@ -233,19 +235,37 @@ QString FluidTiles::groupFor(EffectWindow *w) const {
         ? effects->currentActivity() : activities.front();
     return c->output()->uuid()+"/"+(desktop ? desktop->id() : "none")+"/"+activity;
 }
-QRectF FluidTiles::areaFor(EffectWindow *w) const {
+QRectF FluidTiles::areaFor(EffectWindow *w, bool expanded) const {
     if (!w || !w->window() || !w->window()->output() || !effects->screens().contains(w->window()->output())) return {};
     QRectF area = effects->clientArea(MaximizeArea, w);
+    if (expanded) return area;
     const double scale = w->window()->output()->scale();
     const double gap = Fluid::Tree::snap(m_outerGap, scale);
     return area.adjusted(gap, gap, -gap, -gap);
 }
-QHash<QString, QSizeF> FluidTiles::minimums(const QString &group) const {
+bool FluidTiles::expandedSingle(const QString &group) const {
+    if (!m_expandSingleWindow) return false;
+    const auto tree=m_trees.find(group);
+    if (tree==m_trees.end() || !tree->second.root || !tree->second.root->leaf()) return false;
+    const auto state=m_windows.find(tree->second.root->id);
+    if (state==m_windows.end() || !state->second.effect || !state->second.effect->window()) return false;
+    auto c=state->second.effect->window();
+    const auto area=areaFor(state->second.effect,true);
+    const auto frame=c->frameGeometry(),client=c->clientGeometry();
+    const auto maximum=c->maxSize();
+    // A client that can fill the ordinary inset tile might still have a
+    // maximum just below the work area. Retain its valid ordinary tile.
+    return !area.isEmpty() && maximum.width()+frame.width()-client.width()>=area.width()
+        && maximum.height()+frame.height()-client.height()>=area.height();
+}
+QHash<QString, QSizeF> FluidTiles::minimums(const QString &group, bool expanded) const {
     QHash<QString, QSizeF> result;
     for (const auto &[id, state] : m_windows) {
         if (state.group != group || !state.effect || !state.effect->window()) continue;
         result[id] = m_appearance->minimumFrame(state.effect);
-        const double inset=m_appearance->border(state.effect);
+        // Predict the destination presentation, including restoration of an
+        // expanded tile's border before fitting an incoming second tile.
+        const double inset=expanded?0:m_appearance->border(state.effect,true);
         result[id]+=QSizeF(2*inset,2*inset);
     }
     return result;
@@ -357,6 +377,7 @@ void FluidTiles::watch(EffectWindow *w, bool newlyAdded) {
 }
 void FluidTiles::detach(State &s, bool restore) {
     s.openingPending=false;
+    m_appearance->setExpanded(s.effect,false);
     if (!s.tiled) { cancelFloatingTransition(s); return; }
     if (m_drag) m_drag.reset();
     m_trees[s.group].remove(s.id);
@@ -524,11 +545,12 @@ void FluidTiles::reconcile() {
             State *newest=nullptr;
             for (auto state : ordered) if (state->tiled && state->group==group) newest=state;
             if (!newest) break;
-            const auto area=areaFor(newest->effect);
+            const bool expanded=expandedSingle(group);
+            const auto area=areaFor(newest->effect,expanded);
             if (area.isEmpty()) break;
             const double gap=Fluid::Tree::snap(m_gap,newest->effect->window()->output()->scale());
             applyPairPreference(group,newest->effect);
-            const auto min=tree.minimum(minimums(group),gap,newest->effect->window()->output()->scale());
+            const auto min=tree.minimum(minimums(group,expanded),gap,newest->effect->window()->output()->scale());
             if (min.width()<=area.width() && min.height()<=area.height()) break;
             detach(*newest,true);newest->capacityBlocked=true;changed.insert(group);
         }
@@ -561,8 +583,9 @@ void FluidTiles::reconcile() {
                 if (auto hovered=at(Cursors::self()->mouse()->pos()); hovered && hovered->group==group) near=hovered->id;
             }
             s.insertNear.clear();
-            const auto area = areaFor(s.effect);
-            if (!tree.insertFitting(id, near, area, gap, scale, minimums(group))) {
+            const bool firstExpanded=m_expandSingleWindow && !tree.root;
+            const auto area = areaFor(s.effect,firstExpanded);
+            if (!tree.insertFitting(id, near, area, gap, scale, minimums(group,firstExpanded))) {
                 s.openingPending=false;
                 s.tiled = false; s.group.clear(); s.capacityBlocked=true;
                 if (s.effect->data(WindowAddedGrabRole).value<void *>()==this) s.effect->setData(WindowAddedGrabRole,QVariant());
@@ -600,7 +623,12 @@ void FluidTiles::layoutGroup(const QString &group, bool immediate) {
     const double scale = output->scale();
     const double gap = Fluid::Tree::snap(m_gap, scale);
     applyPairPreference(group,representative->effect);
-    const auto layout = m_trees[group].layout(areaFor(representative->effect), gap, scale, minimums(group));
+    const bool expanded=expandedSingle(group);
+    for (auto &[id,s] : m_windows) if (s.tiled && s.group==group && s.effect) {
+        m_appearance->setExpanded(s.effect,expanded);
+        m_appearance->sync(s.effect,true);
+    }
+    const auto layout = m_trees[group].layout(areaFor(representative->effect,expanded), gap, scale, minimums(group,expanded));
     for (auto it = layout.cbegin(); it != layout.cend(); ++it) {
         auto &s = m_windows.at(it.key());
         s.target = Fluid::PresentationGeometry::clientFrame(it.value(),m_appearance->border(s.effect));
@@ -1130,13 +1158,13 @@ QString FluidTiles::Status() const {
     for (auto o : effects->screens()) outputs.append(QJsonObject{{"name", o->name()}, {"scale", o->scale()}, {"refresh_millihz", int(o->refreshRate())}, {"geometry", jsonRect(o->geometryF())}});
     QJsonObject metrics;
     for (const auto &[name,m] : m_metrics) metrics[name] = QJsonObject{{"paint", distribution(m.paintIntervals)}, {"presentation", distribution(m.presentationIntervals)}, {"paint_frames", qint64(m.paints)}};
-    return QString::fromUtf8(QJsonDocument(QJsonObject{{"version", "0.5.3"}, {"enabled", m_enabled}, {"dragging", m_drag.has_value()}, {"nativeDrag", m_drag && m_drag->nativeMove},
+    return QString::fromUtf8(QJsonDocument(QJsonObject{{"version", "0.5.4"}, {"enabled", m_enabled}, {"dragging", m_drag.has_value()}, {"nativeDrag", m_drag && m_drag->nativeMove},
         {"activeWindow",effects->activeWindow()?idOf(effects->activeWindow()):QString{}},
         {"fullScreenEffect",effects->activeFullScreenEffect()?QString::fromLatin1(effects->activeFullScreenEffect()->metaObject()->className()):QString{}},
         {"libraryPath",QString::fromLocal8Bit(library.dli_fname?library.dli_fname:"")},
         {"nativeResize",m_drag && m_drag->nativeResize}, {"freeResize",m_drag && m_drag->freeResize}, {"animating", m_animating}, {"innerGap", m_gap}, {"outerGap",m_outerGap},
         {"ignoreRules",QJsonObject{{"applications",m_ignoreApplicationText},{"titles",m_ignoreTitleText},{"roles",m_ignoreRoleText}}},
-        {"springFrequency",m_omega}, {"animationTimeFactor",effects->animationTimeFactor()}, {"appearance",m_appearance->status()}, {"testMode", m_test}, {"outputs", outputs}, {"windows", windows}, {"metrics", metrics}}).toJson(QJsonDocument::Compact));
+        {"expandSingleWindow",m_expandSingleWindow}, {"springFrequency",m_omega}, {"animationTimeFactor",effects->animationTimeFactor()}, {"appearance",m_appearance->status()}, {"testMode", m_test}, {"outputs", outputs}, {"windows", windows}, {"metrics", metrics}}).toJson(QJsonDocument::Compact));
 }
 
 KWIN_EFFECT_FACTORY_SUPPORTED_ENABLED(FluidTiles, "metadata.json", return KWin::OffscreenEffect::supported();, return false;)

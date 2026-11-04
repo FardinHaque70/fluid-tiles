@@ -93,6 +93,7 @@ private:
     QElapsedTimer m_clock;
     qint64 m_lastStep = 0;
     bool m_enabled = true, m_animating = false, m_test = false;
+    bool m_expandSingleWindow = true;
     double m_gap = 10, m_outerGap = 10, m_omega = 24;
     void watch(KWin::EffectWindow *, bool newlyAdded = false);
     void watchOutput(KWin::LogicalOutput *);
@@ -101,8 +102,9 @@ private:
     bool eligible(KWin::EffectWindow *) const;
     bool ignored(KWin::EffectWindow *) const;
     QString groupFor(KWin::EffectWindow *) const;
-    QRectF areaFor(KWin::EffectWindow *) const;
-    QHash<QString, QSizeF> minimums(const QString &group) const;
+    QRectF areaFor(KWin::EffectWindow *, bool expanded = false) const;
+    bool expandedSingle(const QString &) const;
+    QHash<QString, QSizeF> minimums(const QString &group, bool expanded = false) const;
     void layoutGroup(const QString &, bool immediate = false);
     void applyPairPreference(const QString &, KWin::EffectWindow *);
     void detach(State &, bool restore);

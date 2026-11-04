@@ -30,7 +30,9 @@ public:
     bool configure(const KConfigGroup &); // true for geometry-affecting changes
     void setEnabled(bool enabled);
     bool applies(KWin::EffectWindow *) const;
-    double border(KWin::EffectWindow *) const;
+    double border(KWin::EffectWindow *, bool normal = false) const;
+    void setExpanded(KWin::EffectWindow *, bool);
+    bool isExpanded(KWin::EffectWindow *) const;
     QSizeF minimumFrame(KWin::EffectWindow *) const;
     void watch(KWin::EffectWindow *);
     void sync(KWin::EffectWindow *, bool tiled);
@@ -65,6 +67,7 @@ private:
         KWin::BorderRadius originalRadius, writtenRadius;
         QRectF lastOuter, pendingFrame;
         bool framePending=false;
+        bool expanded=false;
         std::unique_ptr<KWin::Item> boundsItem;
         std::unique_ptr<KWin::Item> outlineRoot;
         std::unique_ptr<KWin::OutlinedBorderItem> outline;

@@ -5,7 +5,7 @@
     "Description": "Internal renderer controlled by the Fluid Tiles KWin Script",
     "Category": "Window Management",
     "License": "GPL-3.0-or-later",
-    "Version": "0.5.3",
+    "Version": "0.5.4",
     "EnabledByDefault": false
   },
   "X-KDE-Ordering": 45,
