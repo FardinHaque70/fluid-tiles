@@ -100,6 +100,7 @@ void Appearance::setExpanded(EffectWindow *w, bool expanded) {
     damage(w,w->frameGeometry());
 }
 double Appearance::border(EffectWindow *w, bool normal) const {
+    if(auto it=m_windows.find(w);it!=m_windows.end() && it->second.closing)return it->second.snapshot.border;
     return applies(w) && (normal || !isExpanded(w)) && m_outlinesEnabled && w->window()->output()?PresentationGeometry::thickness(m_width,w->window()->output()->scale()):0;
 }
 QSizeF Appearance::minimumFrame(EffectWindow *w) const {
@@ -214,8 +215,18 @@ void Appearance::focusChanged() {
         s.active=active;
     }
 }
+Appearance::SnapshotStyle Appearance::snapshot(EffectWindow *w,const QRectF &visual) const {
+    const auto p=geometry(w,visual);
+    return {p.border,w->opacity(),p.radius,w==effects->activeWindow()?m_active:m_inactive,
+        applies(w) && !isExpanded(w) && m_roundingEnabled && m_radius>0};
+}
+void Appearance::freeze(EffectWindow *w,const SnapshotStyle &style) {
+    auto it=m_windows.find(w);if(it==m_windows.end())return;
+    it->second.closing=true;it->second.snapshot=style;
+}
 PresentationGeometry Appearance::geometry(EffectWindow *w,const QRectF &visual) const {
     PresentationGeometry p;p.frame=visual;p.border=border(w);
+    if(auto it=m_windows.find(w);it!=m_windows.end() && it->second.closing){p.radius=it->second.snapshot.radius;return p;}
     if (applies(w)) {
         const auto native=w->window()->borderRadius();
         const double radius=std::min(m_radius,std::min(visual.width(),visual.height())/2);
@@ -259,7 +270,9 @@ bool Appearance::prepareShader() {
     return true;
 }
 GLShader *Appearance::clipShader(EffectWindow *w,const QRectF &visual,double scale) {
-    if(!applies(w) || isExpanded(w) || !m_roundingEnabled || m_radius<=0 || !prepareShader())return nullptr;
+    const auto it=m_windows.find(w);
+    const bool closing=it!=m_windows.end() && it->second.closing;
+    if((closing?!it->second.snapshot.rounded:(!applies(w) || isExpanded(w) || !m_roundingEnabled || m_radius<=0)) || !prepareShader())return nullptr;
     const auto actual=w->frameGeometry();
     if(actual.isEmpty())return nullptr;
     const auto p=geometry(w,visual);
@@ -270,17 +283,20 @@ GLShader *Appearance::clipShader(EffectWindow *w,const QRectF &visual,double sca
     return m_clipShader.get();
 }
 BorderRadius Appearance::beginCapture(EffectWindow *w) {
-    if(!applies(w) || !m_roundingEnabled || m_radius<=0 || !w->windowItem())return {};
+    const auto it=m_windows.find(w);const bool closing=it!=m_windows.end() && it->second.closing;
+    if((closing?!it->second.snapshot.rounded:(!applies(w) || !m_roundingEnabled || m_radius<=0)) || !w->windowItem())return {};
     ++m_captures;
     auto item=w->windowItem()->windowContainer();
     const auto saved=item->borderRadius();item->setBorderRadius(BorderRadius());return saved;
 }
 void Appearance::endCapture(EffectWindow *w,const BorderRadius &saved) {
-    if(w && !w->isDeleted() && w->windowItem() && applies(w) && m_roundingEnabled && m_radius>0)w->windowItem()->windowContainer()->setBorderRadius(saved);
+    const auto it=m_windows.find(w);const bool closing=it!=m_windows.end() && it->second.closing;
+    if(w && w->windowItem() && (closing?it->second.snapshot.rounded:(!w->isDeleted() && applies(w) && m_roundingEnabled && m_radius>0)))w->windowItem()->windowContainer()->setBorderRadius(saved);
 }
 bool Appearance::drawOutline(const RenderTarget &target,const RenderViewport &viewport,EffectWindow *w,int mask,
                              const Region &region,const WindowPaintData &incoming,const QRectF &visual) {
-    if(!applies(w))return true;
+    const auto it=m_windows.find(w);const bool closing=it!=m_windows.end() && it->second.closing;
+    if(!closing && !applies(w))return true;
     const auto fullScreenEffect=effects->activeFullScreenEffect();
     // Slide already supplies per-window translation and clipping. Draw in that
     // same pass so both incoming and outgoing desktop borders remain attached.
@@ -296,9 +312,9 @@ bool Appearance::drawOutline(const RenderTarget &target,const RenderViewport &vi
     }
     const QRectF actual=w->frameGeometry();
     s.outlineRoot->setPosition(actual.topLeft());
-    s.outlineRoot->setOpacity(w->opacity());
+    s.outlineRoot->setOpacity(closing?s.snapshot.opacity:w->opacity());
     s.outline->setInnerRect(RectF(visual.translated(-actual.topLeft())));
-    s.outline->setOutline(BorderOutline(p.border,w==effects->activeWindow()?m_active:m_inactive,p.radius));
+    s.outline->setOutline(BorderOutline(p.border,closing?s.snapshot.color:(w==effects->activeWindow()?m_active:m_inactive),p.radius));
     auto renderer=effects->scene()->renderer(Compositor::self()->primaryDevice());
     return renderer->renderItem(target,viewport,s.outlineRoot.get(),mask,region,incoming,{},{});
 }

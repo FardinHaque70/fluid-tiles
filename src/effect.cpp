@@ -88,15 +88,16 @@ FluidTiles::FluidTiles() {
     });
     connect(effects, &EffectsHandler::windowClosed, this, [this](EffectWindow *w) {
         const auto id = idOf(w);
-        bool managed=false;
+        bool managed=false,closing=false;
         if (auto it = m_windows.find(id); it != m_windows.end()) {
             managed=it->second.tiled;
+            closing=beginClosing(it->second);
             if (m_drag && (managed || m_drag->id==id)) endDrag(false);
             detach(it->second, false); m_windows.erase(it);
         }
         // Unmanaged docks can still change the work area when they close.
         // Reconcile geometry, but never cancel input for an unrelated popup.
-        m_appearance->forget(w);m_drawDepth.remove(w);
+        if(!closing){m_appearance->forget(w);m_drawDepth.remove(w);}
         m_floating.remove(id); scheduleReconcile();
     });
     connect(effects, &EffectsHandler::windowDeleted, this, [this](EffectWindow *w) {
@@ -112,13 +113,15 @@ FluidTiles::FluidTiles() {
         m_appearance->forget(w);m_drawDepth.remove(w);
         m_floating.remove(id); scheduleReconcile();
     });
-    connect(effects, &EffectsHandler::desktopChanged, this, [this] { if (m_drag) endDrag(false); scheduleReconcile(); });
-    connect(effects, &EffectsHandler::currentActivityChanged, this, [this] { if (m_drag) endDrag(false); scheduleReconcile(); });
+    connect(effects, &EffectsHandler::desktopChanged, this, [this] { clearClosing();if (m_drag) endDrag(false); scheduleReconcile(); });
+    connect(effects, &EffectsHandler::currentActivityChanged, this, [this] { clearClosing();if (m_drag) endDrag(false); scheduleReconcile(); });
     connect(effects, &EffectsHandler::screenAdded, this, &FluidTiles::watchOutput);
-    connect(effects, &EffectsHandler::screenRemoved, this, [this] { if (m_drag) endDrag(false); scheduleReconcile(); });
+    connect(effects, &EffectsHandler::screenRemoved, this, [this] { clearClosing();if (m_drag) endDrag(false); scheduleReconcile(); });
+    connect(effects,&EffectsHandler::screenLockingChanged,this,[this](bool locked){if(locked){clearClosing();if(m_drag)endDrag(false);}});
     connect(workspace(), &Workspace::configChanged, this, [this] { reconfigure(ReconfigureAll); scheduleReconcile(); });
     connect(workspace(), &Workspace::outputsChanged, this, [this] { if (m_drag) endDrag(false); scheduleReconcile(); });
     connect(effects, &EffectsHandler::activeFullScreenEffectChanged, this, [this] {
+        if(effects->activeFullScreenEffect())clearClosing();
         if (effects->activeFullScreenEffect() && m_drag) endDrag(false);
         effects->addRepaintFull();
     });
@@ -159,9 +162,13 @@ void FluidTiles::reconfigure(ReconfigureFlags) {
     const auto applications=config.readEntry("IgnoreApplications",Fluid::defaultIgnoredApplications);
     const auto titles=config.readEntry("IgnoreTitles",QString{});
     const auto roles=config.readEntry("IgnoreRoles",Fluid::defaultIgnoredRoles);
-    const bool changed=expandSingle!=m_expandSingleWindow || gap!=m_gap || outer!=m_outerGap || omega!=m_omega || applications!=m_ignoreApplicationText
+    const auto animation=Fluid::AnimationSettings::read(config.readEntry("AnimationSettings",QString{}));
+    const bool motionChanged=!m_animationSettingsLoaded || animation.serialized()!=m_animationSettings.serialized() || animation.error!=m_animationSettings.error;
+    if(motionChanged){if(m_drag)m_pendingAnimationSettings=animation;else applyAnimationSettings(animation);}
+    const bool changed=expandSingle!=m_expandSingleWindow || gap!=m_gap || outer!=m_outerGap || applications!=m_ignoreApplicationText
         || titles!=m_ignoreTitleText || roles!=m_ignoreRoleText;
     const bool appearanceGeometry=m_appearance->configure(config);
+    m_omega=omega;
     if (!changed && !appearanceGeometry) return;
     if (m_drag) endDrag(false);
     m_gap=gap;m_outerGap=outer;m_omega=omega;
@@ -177,7 +184,65 @@ void FluidTiles::shortcut(const QString &name, const QString &text, const QKeySe
     KGlobalAccel::self()->setShortcut(a, {key});
     connect(a, &QAction::triggered, this, [this, name] { Action(name); });
 }
-bool FluidTiles::isActive() const { return m_enabled && !m_windows.empty(); }
+void FluidTiles::releaseGrab(EffectWindow *w,int role) {
+    if(w && w->data(role).value<void *>()==this)w->setData(role,QVariant());
+}
+void FluidTiles::configureMotion(State &s,Fluid::AnimationEvent phase) {
+    if(s.phase!=phase || !s.motion.moving())s.animationStarted=m_clock.nsecsElapsed();
+    s.phase=phase;s.motion.configure(animationProfile(phase).curve);
+}
+void FluidTiles::applyAnimationSettings(const Fluid::AnimationSettings &settings) {
+    m_animationSettings=settings;m_animationSettingsLoaded=true;
+    for(auto event:Fluid::animationEvents)m_animationProfiles[size_t(event)]=settings.profile(event);
+    if(!settings.enabled() || !animationProfile(Fluid::AnimationEvent::Close).enabled)clearClosing();
+    bool moving=!m_closing.empty();
+    for(auto &[id,s]:m_windows)if(s.tiled || s.floatingTransition) {
+        configureMotion(s,s.phase);
+        const auto &p=animationProfile(s.phase);
+        if(!p.enabled){s.motion.reset(s.target);s.opacity.reset(1);}
+        else if(s.opacity.moving())s.opacity.target(1,p.opacity);
+        moving |= s.motion.moving() || s.opacity.moving();
+    }
+    if(m_clock.isValid()){m_animating=moving;m_lastStep=m_clock.nsecsElapsed();effects->addRepaintFull();}
+}
+bool FluidTiles::beginClosing(State &s) {
+    auto w=s.effect.data();const auto p=animationProfile(Fluid::AnimationEvent::Close);
+    if(!w || !m_enabled || !s.tiled || p.style=="system" || w->skipsCloseAnimation()
+        || !w->isOnCurrentDesktop() || !w->isOnCurrentActivity() || effects->activeFullScreenEffect()
+        || effects->isScreenLocked() || (w->data(WindowClosedGrabRole).isValid() && w->data(WindowClosedGrabRole).value<void *>()!=this))return false;
+    w->setData(WindowClosedGrabRole,QVariant::fromValue(static_cast<void *>(this)));
+    if(!p.enabled || effects->animationTimeFactor()==0) {
+        QPointer<EffectWindow> guarded=w;
+        QTimer::singleShot(0,this,[this,guarded]{releaseGrab(guarded,WindowClosedGrabRole);});return false;
+    }
+    auto g=std::make_unique<ClosingVisual>();g->effect=w;
+    g->lifetime=std::make_unique<EffectWindowDeletedRef>(w);
+    g->motion=s.motion;g->motion.configure(p.curve);
+    g->motion.target(Fluid::transitionRect(p,s.motion.rect(),s.lastWorkArea,true));
+    g->opacity=s.opacity;
+    if(p.fade)g->opacity.target(0,p.opacity);else g->opacity.reset(s.opacity.value);
+    g->outputName=s.outputName;g->scale=s.outputScale;g->started=m_clock.nsecsElapsed();
+    m_appearance->freeze(w,s.lastStyle);
+    if(!s.redirected)redirect(w);
+    s.redirected=false; // Transfer offscreen ownership before detaching live state.
+    m_closing.emplace(s.id,std::move(g));
+    if(!m_animating)m_lastStep=m_clock.nsecsElapsed();
+    m_animating=true;effects->addRepaintFull();return true;
+}
+void FluidTiles::finishClosing(const QString &id) {
+    auto node=m_closing.extract(id);if(node.empty())return;
+    auto g=std::move(node.mapped());
+    if(g->effect) {
+        effects->addRepaint(RectF(g->motion.rect().united(g->effect->expandedGeometry()).adjusted(-64,-64,64,64)));
+        effects->makeOpenGLContextCurrent();unredirect(g->effect);
+        releaseGrab(g->effect,WindowClosedGrabRole);
+        m_appearance->forget(g->effect);m_drawDepth.remove(g->effect);
+    }
+    ++m_closedAnimations;sample(m_settlingTimes,(m_clock.nsecsElapsed()-g->started)/1e6);
+    // Drop the deleted reference last, after removal from every bookkeeping map.
+}
+void FluidTiles::clearClosing() {while(!m_closing.empty())finishClosing(m_closing.begin()->first);}
+bool FluidTiles::isActive() const { return m_enabled && (!m_windows.empty() || !m_closing.empty()); }
 void FluidTiles::scheduleReconcile() { if (!m_reconcile.isActive()) m_reconcile.start(0); }
 void FluidTiles::watchOutput(LogicalOutput *o) {
     connect(o, &LogicalOutput::geometryChanged, this, &FluidTiles::scheduleReconcile);
@@ -190,7 +255,11 @@ void FluidTiles::watchOutput(LogicalOutput *o) {
                 const auto ns = time.count();
                 // Record only continuous motion, never count idle time as stutter.
                 if (m_animating || m_drag) {
-                    if (m.lastPresentation && ns > m.lastPresentation) sample(m.presentationIntervals, (ns-m.lastPresentation)/1e6);
+                    if (m.lastPresentation && ns > m.lastPresentation) {
+                        const double interval=(ns-m.lastPresentation)/1e6;sample(m.presentationIntervals,interval);
+                        for(auto output:effects->screens())if(output->name()==name && output->refreshRate()>0)
+                            m.missedRefreshes+=std::max(0LL,std::llround(interval/(1000000./output->refreshRate()))-1);
+                    }
                     m.lastPresentation = ns;
                 } else m.lastPresentation = 0;
             });
@@ -275,11 +344,15 @@ void FluidTiles::watch(EffectWindow *w, bool newlyAdded) {
     auto c = w->window();
     const auto id = idOf(w);
     if (m_windows.contains(id)) return;
-    if (m_enabled && eligible(w)) w->setData(WindowAddedGrabRole,QVariant::fromValue(static_cast<void *>(this)));
-    State state; state.id = id; state.effect = w; state.restore = c->frameGeometry(); state.motion.reset(state.restore);
+    if (m_enabled && eligible(w) && (!w->data(WindowAddedGrabRole).isValid() || w->data(WindowAddedGrabRole).value<void *>()==this))
+        w->setData(WindowAddedGrabRole,QVariant::fromValue(static_cast<void *>(this)));
+    State state; state.id = id; state.effect = w; state.restore = c->frameGeometry(); state.motion.reset(state.restore);state.opacity.reset(1);
+    state.lastWorkArea=effects->clientArea(MaximizeArea,w);
+    if(c->output()){state.outputName=c->output()->name();state.outputScale=c->output()->scale();}
     // Only a fresh visible map gets an entrance. Enabling with existing
     // clients, capacity recovery and native-state restoration are not opens.
     state.openingPending=newlyAdded && m_enabled && eligible(w) && !m_drag
+        && w->data(WindowAddedGrabRole).value<void *>()==this
         && w->isOnCurrentDesktop() && w->isOnCurrentActivity()
         && !effects->activeFullScreenEffect() && !effects->isScreenLocked()
         && !c->isInteractiveMove() && !c->isInteractiveResize();
@@ -346,6 +419,7 @@ void FluidTiles::watch(EffectWindow *w, bool newlyAdded) {
         }
         if ((!c->isInteractiveMove() && !c->isInteractiveResize()) || !m_enabled) return;
         if (m_drag) endDrag(false);
+        it->second.opacity.reset(1);it->second.phase=Fluid::AnimationEvent::Rearrange;
         Drag d; d.id=id; d.group=it->second.group; d.initial=it->second.motion.rect();
         d.generation=++m_nextDrag;
         d.origin=d.last=Cursors::self()->mouse()->pos();
@@ -376,6 +450,7 @@ void FluidTiles::watch(EffectWindow *w, bool newlyAdded) {
     scheduleReconcile();
 }
 void FluidTiles::detach(State &s, bool restore) {
+    s.opacity.reset(1);
     s.openingPending=false;
     m_appearance->setExpanded(s.effect,false);
     if (!s.tiled) { cancelFloatingTransition(s); return; }
@@ -422,7 +497,7 @@ void FluidTiles::floatToCenter(State &s) {
     s.target=QRectF(QPointF(Fluid::Tree::snap(position.x(),scale),Fluid::Tree::snap(position.y(),scale)),size);
     s.restore=s.target;s.restorePending=true;s.motion=motion;
     if (effects->animationTimeFactor()==0) s.motion.reset(s.target);
-    else s.motion.target(s.target);
+    else {configureMotion(s,Fluid::AnimationEvent::Float);s.motion.target(s.target);if(!animationProfile(s.phase).enabled)s.motion.reset(s.target);}
     s.floatingTransition=true;s.captureDirty=true;
     c->moveResize(RectF(s.target));
     syncLayers();
@@ -433,6 +508,7 @@ void FluidTiles::floatToCenter(State &s) {
     m_animating=true;effects->addRepaintFull();
 }
 void FluidTiles::restoreAll() {
+    clearClosing();
     m_enabled=false;
     m_appearance->setEnabled(false);
     if (m_drag) endDrag(false);
@@ -571,7 +647,7 @@ void FluidTiles::reconcile() {
             if (!s.floatingTransition) s.motion.reset(c->frameGeometry());
             s.lastRequest = {};
             s.group = group; s.tiled = true;
-            s.effect->setData(WindowAddedGrabRole,QVariant::fromValue(static_cast<void *>(this)));
+            if(!s.effect->data(WindowAddedGrabRole).isValid())s.effect->setData(WindowAddedGrabRole,QVariant::fromValue(static_cast<void *>(this)));
             c->setQuickTileModeAtCurrentPosition(QuickTileMode());
             auto &tree = m_trees[group];
             const double scale = c->output()->scale();
@@ -632,23 +708,26 @@ void FluidTiles::layoutGroup(const QString &group, bool immediate) {
     for (auto it = layout.cbegin(); it != layout.cend(); ++it) {
         auto &s = m_windows.at(it.key());
         s.target = Fluid::PresentationGeometry::clientFrame(it.value(),m_appearance->border(s.effect));
+        auto phase=s.phase;
+        if(phase!=Fluid::AnimationEvent::Open && phase!=Fluid::AnimationEvent::Drop && phase!=Fluid::AnimationEvent::Float)
+            phase=Fluid::AnimationEvent::Rearrange;
         if (s.openingPending) {
             s.openingPending=false;
-            if (!immediate && effects->animationTimeFactor()!=0 && !m_drag
+            phase=Fluid::AnimationEvent::Open;
+            const auto profile=animationProfile(phase);
+            if (!immediate && profile.enabled && effects->animationTimeFactor()!=0 && !m_drag
                 && s.effect->isOnCurrentDesktop() && s.effect->isOnCurrentActivity()
                 && !effects->activeFullScreenEffect() && !effects->isScreenLocked()
                 && !s.effect->window()->isInteractiveMove() && !s.effect->window()->isInteractiveResize()) {
-                // Commit the final native tile as usual; only presentation
-                // starts smaller. This also works when the first client
-                // remembers a frame already as large as the work area.
-                const QRectF area=effects->clientArea(MaximizeArea,s.effect);
-                const QSizeF size=s.target.size()*.65;
-                s.openingFrom=QRectF(area.center()-QPointF(size.width()/2,size.height()/2),size);
+                s.openingFrom=Fluid::transitionRect(profile,s.target,effects->clientArea(MaximizeArea,s.effect));
                 s.motion.reset(s.openingFrom);
+                if(profile.fade){s.opacity.reset(0);s.opacity.target(1,profile.opacity);}
             }
         }
-        if (immediate || effects->animationTimeFactor() == 0) s.motion.reset(s.target);
-        else s.motion.target(s.target);
+        configureMotion(s,phase);
+        if (immediate || !animationProfile(phase).enabled || effects->animationTimeFactor() == 0) {
+            s.motion.reset(s.target);s.opacity.reset(1);
+        } else s.motion.target(s.target);
     }
     if (!m_animating) m_lastStep = m_clock.nsecsElapsed();
     m_animating = true;
@@ -695,22 +774,47 @@ void FluidTiles::prePaintScreen(ScreenPrePaintData &data) {
         }
         if (m_drag && (m_drag->nativeMove || (m_drag->nativeResize && m_drag->freeResize)) && m_drag->id==id && s.effect)
             s.motion.reset(s.effect->frameGeometry());
-        else s.motion.step(dt, m_omega / std::max(.1, effects->animationTimeFactor()));
-        if (s.effect && s.effect->isOnCurrentDesktop() && s.effect->isOnCurrentActivity()) moving |= s.motion.moving();
+        else if(effects->animationTimeFactor()==0 || !animationProfile(s.phase).enabled) {s.motion.reset(s.target);s.opacity.reset(1);}
+        else {
+            const double elapsed=dt*m_animationSettings.speed()/std::max(.01,effects->animationTimeFactor());
+            s.motion.step(elapsed,s.effect->window()->output()->scale());s.opacity.step(elapsed);
+        }
+        if(!s.motion.moving() && !s.opacity.moving()) {
+            if(s.animationStarted){sample(m_settlingTimes,(now-s.animationStarted)/1e6);s.animationStarted=0;}
+            s.phase=Fluid::AnimationEvent::Rearrange;
+            releaseGrab(s.effect,WindowAddedGrabRole);
+        }
+        if (s.effect && s.effect->isOnCurrentDesktop() && s.effect->isOnCurrentActivity()) moving |= s.motion.moving() || s.opacity.moving();
     }
+    std::vector<QString> finished;
+    for(auto &[id,g]:m_closing) {
+        const bool outputAlive=std::ranges::any_of(effects->screens(),[&](auto o){return o->name()==g->outputName;});
+        if(!g->effect || !outputAlive || effects->isScreenLocked() || effects->activeFullScreenEffect() || effects->animationTimeFactor()==0) {finished.push_back(id);continue;}
+        const QRectF previous=g->motion.rect();
+        const double elapsed=dt*m_animationSettings.speed()/std::max(.01,effects->animationTimeFactor());
+        g->motion.step(elapsed,g->scale);g->opacity.step(elapsed);
+        effects->addRepaint(RectF(previous.united(g->motion.rect()).adjusted(-64,-64,64,64)));
+        if(!g->motion.moving() && !g->opacity.moving())finished.push_back(id);
+        else moving=true;
+    }
+    for(const auto &id:finished)finishClosing(id);
     m_animating = moving || m_drag.has_value();
     flushGeometry();
     for (auto &[id,s] : m_windows) if (s.effect && !s.effect->isDeleted()) {
-        m_appearance->damage(s.effect,presentation(s));
+        const auto visual=presentation(s);
+        m_appearance->damage(s.effect,visual);
+        s.lastStyle=m_appearance->snapshot(s.effect,visual);
+        s.lastWorkArea=effects->clientArea(MaximizeArea,s.effect);
+        if(auto o=s.effect->window()->output()){s.outputName=o->name();s.outputScale=o->scale();}
     }
     for (auto &[id,s] : m_windows) if ((s.tiled || s.floatingTransition) && s.effect && !s.effect->isDeleted()) {
         const bool visible = s.effect->isOnCurrentDesktop() && s.effect->isOnCurrentActivity();
         // Wayland clients can round their content size by a physical pixel.
         // Stop redirecting at rest so stationary text stays sharp and ordinary
         // applications/video don't pay for an unnecessary offscreen copy.
-        const double tolerance = s.motion.moving() || m_drag ? .01 : 1.1/s.effect->window()->output()->scale();
+        const double tolerance = s.motion.moving() || s.opacity.moving() || m_drag ? .01 : 1.1/s.effect->window()->output()->scale();
         const bool needsTransform = visible && !effects->activeFullScreenEffect()
-            && !closeRect(s.motion.rect(), s.effect->frameGeometry(), tolerance);
+            && (!closeRect(s.motion.rect(), s.effect->frameGeometry(), tolerance) || s.opacity.moving());
         if (needsTransform && s.redirected && s.snapshotRevision!=m_appearance->sourceRevision()) {
             unredirect(s.effect);s.redirected=false;
         }
@@ -733,13 +837,18 @@ void FluidTiles::prePaintScreen(ScreenPrePaintData &data) {
 void FluidTiles::prePaintWindow(RenderView *view, EffectWindow *w, WindowPrePaintData &data) {
     auto it = m_windows.find(idOf(w));
     if (it != m_windows.end() && it->second.redirected) data.setTransformed();
+    const auto ghost=m_closing.find(idOf(w));
+    if(ghost!=m_closing.end()) {data.setTransformed();data.setTranslucent();}
+    else if(it!=m_windows.end() && it->second.opacity.value<1)data.setTranslucent();
     effects->prePaintWindow(view, w, data);
 }
 void FluidTiles::apply(EffectWindow *w, int, WindowPaintData &data, WindowQuadList &) {
     if (effects->activeFullScreenEffect()) return;
     auto it = m_windows.find(idOf(w));
-    if (it == m_windows.end() || (!it->second.tiled && !it->second.floatingTransition)) return;
-    const QRectF actual = w->frameGeometry(), visual = it->second.motion.rect();
+    const auto ghost=m_closing.find(idOf(w));
+    if (ghost==m_closing.end() && (it == m_windows.end() || (!it->second.tiled && !it->second.floatingTransition))) return;
+    const QRectF actual = w->frameGeometry(), visual = ghost!=m_closing.end()?ghost->second->motion.rect():it->second.motion.rect();
+    data.multiplyOpacity(std::clamp(ghost!=m_closing.end()?ghost->second->opacity.value:it->second.opacity.value,0.,1.));
     if (actual.width() <= 0 || actual.height() <= 0) return;
     data *= QVector2D(visual.width()/actual.width(), visual.height()/actual.height());
     data += visual.topLeft()-actual.topLeft();
@@ -750,26 +859,33 @@ bool FluidTiles::drawWindow(const RenderTarget &target,const RenderViewport &vie
     m_drawDepth[w]=depth+1;
     const auto incoming=data;
     const auto it=m_windows.find(idOf(w));
-    const QRectF visual=it!=m_windows.end()?presentation(it->second):QRectF(w->frameGeometry());
-    const bool redirected=it!=m_windows.end() && it->second.redirected;
+    const auto ghost=m_closing.find(idOf(w));
+    const bool closing=ghost!=m_closing.end();
+    const QRectF visual=closing?ghost->second->motion.rect():(it!=m_windows.end()?presentation(it->second):QRectF(w->frameGeometry()));
+    const bool redirected=closing || (it!=m_windows.end() && it->second.redirected);
     KWin::BorderRadius saved;
     if (!depth && redirected) setShader(w,m_appearance->clipShader(w,visual,viewport.scale()));
     // effects->drawWindow advances its iterator before calling this effect.
     // Its offscreen capture normally continues with the next effect rather
     // than re-entering this wrapper. Scope the source bypass around the base
     // call itself; depth also protects captures initiated by other effects.
-    const bool sourceChanged=redirected && (it->second.captureDirty || it->second.snapshotBounds!=QRectF(w->expandedGeometry()));
+    const bool sourceChanged=redirected && (closing?ghost->second->captureDirty:(it->second.captureDirty || it->second.snapshotBounds!=QRectF(w->expandedGeometry())));
     const bool captureScope=sourceChanged || depth>0;
     if (captureScope) saved=m_appearance->beginCapture(w);
     const bool result=OffscreenEffect::drawWindow(target,viewport,w,mask,region,data);
     if (captureScope) m_appearance->endCapture(w,saved);
     if (!depth && redirected && result) {
-        it->second.captureDirty=false;it->second.snapshotBounds=w->expandedGeometry();
+        if(sourceChanged)++m_textureCaptures;
+        if(closing)ghost->second->captureDirty=false;
+        else {it->second.captureDirty=false;it->second.snapshotBounds=w->expandedGeometry();}
     }
     m_drawDepth[w]=depth;
     if (!depth) m_drawDepth.remove(w);
     if (!result || depth>0) return result;
-    return m_appearance->drawOutline(target,viewport,w,mask,region,incoming,visual);
+    auto outlineData=incoming;
+    if(closing || (it!=m_windows.end() && (it->second.tiled || it->second.floatingTransition)))
+        outlineData.multiplyOpacity(std::clamp(closing?ghost->second->opacity.value:it->second.opacity.value,0.,1.));
+    return m_appearance->drawOutline(target,viewport,w,mask,region,outlineData,visual);
 }
 bool FluidTiles::blocksDirectScanout() const {
     return OffscreenEffect::blocksDirectScanout() || m_appearance->needsCompositing();
@@ -777,9 +893,9 @@ bool FluidTiles::blocksDirectScanout() const {
 void FluidTiles::postPaintScreen() {
     effects->postPaintScreen();
     if (m_animating) {
-        // Fullscreen damage is intentional in the first prototype: prioritize
-        // correct fractional-scale damage over prematurely optimizing it.
-        effects->addRepaintFull();
+        for(const auto &[id,s]:m_windows)if((s.tiled || s.floatingTransition) && s.effect && (s.motion.moving() || s.opacity.moving() || m_drag))
+            effects->addRepaint(RectF(presentation(s).united(s.effect->expandedGeometry()).adjusted(-64,-64,64,64)));
+        for(const auto &[id,g]:m_closing)effects->addRepaint(RectF(g->motion.rect().united(g->effect->expandedGeometry()).adjusted(-64,-64,64,64)));
     }
 }
 bool FluidTiles::floatingAbove(const QPointF &point) const {
@@ -810,6 +926,7 @@ FluidTiles::State *FluidTiles::active() {
 bool FluidTiles::beginDrag(const QPointF &point, bool moving) {
     if (!m_enabled || effects->isScreenLocked() || effects->activeFullScreenEffect()) return false;
     auto s = at(point); if (!s) return false;
+    s->opacity.reset(1);s->phase=Fluid::AnimationEvent::Rearrange;
     Drag d; d.id = s->id; d.group = s->group; d.origin = d.last = point; d.initial = s->motion.rect(); d.moving = moving;
     if (!moving) {
         auto &tree = m_trees[d.group];
@@ -965,6 +1082,8 @@ void FluidTiles::endDrag(bool commit) {
             }
         }
     }
+    if(auto it=m_windows.find(drag.id);it!=m_windows.end())it->second.phase=Fluid::AnimationEvent::Drop;
+    if(m_pendingAnimationSettings){auto pending=*m_pendingAnimationSettings;m_pendingAnimationSettings.reset();applyAnimationSettings(pending);}
     syncLayers();
     layoutGroup(drag.group);
     flushGeometry(); scheduleReconcile(); effects->addRepaintFull();
@@ -1029,7 +1148,7 @@ bool FluidTiles::Action(const QString &name) {
     auto s = active(); if (!s) return false;
     if (name == "float") {
         if (s->tiled) { m_floating.insert(s->id); floatToCenter(*s); }
-        else if (m_floating.contains(s->id)) m_floating.remove(s->id);
+        else if (m_floating.contains(s->id)) {m_floating.remove(s->id);s->phase=Fluid::AnimationEvent::Float;}
         else m_floating.insert(s->id);
         // The next explicit transition from floating captures the position the
         // user last chose, rather than an earlier tiled geometry.
@@ -1146,7 +1265,7 @@ QString FluidTiles::Status() const {
             {"fullscreen",s.effect->window()->isFullScreen()}, {"minimized",s.effect->window()->isMinimized()},
             {"maximized",s.effect->window()->maximizeMode()!=MaximizeRestore}, {"restorePending",s.restorePending},
             {"order",qint64(s.order)}, {"manualFloating",m_floating.contains(id)}, {"capacityBlocked",s.capacityBlocked},
-            {"tiled", s.tiled}, {"floatingTransition",s.floatingTransition}, {"openingFrom",jsonRect(s.openingFrom)}, {"group", s.group},
+            {"phase",Fluid::eventKey(s.phase)},{"animationOpacity",s.opacity.value},{"tiled", s.tiled}, {"floatingTransition",s.floatingTransition}, {"openingFrom",jsonRect(s.openingFrom)}, {"group", s.group},
             {"client",jsonRect(s.effect->window()->clientGeometry())},{"buffer",jsonRect(s.effect->window()->bufferGeometry())},
             {"workArea",jsonRect(s.effect->window()->output() && effects->screens().contains(s.effect->window()->output())?QRectF(effects->clientArea(MaximizeArea,s.effect)):QRectF())},
             {"actual", jsonRect(s.effect->frameGeometry())}, {"visual", jsonRect(s.motion.rect())}, {"target", jsonRect(s.target)},
@@ -1154,17 +1273,21 @@ QString FluidTiles::Status() const {
             {"restore", jsonRect(s.restore)}, {"requests", qint64(s.requests)}, {"commits", qint64(s.commits)},
             {"visible", s.effect->isOnCurrentDesktop() && s.effect->isOnCurrentActivity()}});
     }
+    QJsonArray closing;
+    for(const auto &[id,g]:m_closing)closing.append(QJsonObject{{"id",id},{"visual",jsonRect(g->motion.rect())},{"opacity",g->opacity.value},{"output",g->outputName}});
     QJsonArray outputs;
     for (auto o : effects->screens()) outputs.append(QJsonObject{{"name", o->name()}, {"scale", o->scale()}, {"refresh_millihz", int(o->refreshRate())}, {"geometry", jsonRect(o->geometryF())}});
     QJsonObject metrics;
-    for (const auto &[name,m] : m_metrics) metrics[name] = QJsonObject{{"paint", distribution(m.paintIntervals)}, {"presentation", distribution(m.presentationIntervals)}, {"paint_frames", qint64(m.paints)}};
-    return QString::fromUtf8(QJsonDocument(QJsonObject{{"version", "0.5.4"}, {"enabled", m_enabled}, {"dragging", m_drag.has_value()}, {"nativeDrag", m_drag && m_drag->nativeMove},
+    for (const auto &[name,m] : m_metrics) metrics[name] = QJsonObject{{"paint", distribution(m.paintIntervals)}, {"presentation", distribution(m.presentationIntervals)}, {"paint_frames", qint64(m.paints)},{"missedRefreshEstimate",qint64(m.missedRefreshes)}};
+    return QString::fromUtf8(QJsonDocument(QJsonObject{{"version", "0.6.0"}, {"enabled", m_enabled}, {"dragging", m_drag.has_value()}, {"nativeDrag", m_drag && m_drag->nativeMove},
         {"activeWindow",effects->activeWindow()?idOf(effects->activeWindow()):QString{}},
         {"fullScreenEffect",effects->activeFullScreenEffect()?QString::fromLatin1(effects->activeFullScreenEffect()->metaObject()->className()):QString{}},
         {"libraryPath",QString::fromLocal8Bit(library.dli_fname?library.dli_fname:"")},
         {"nativeResize",m_drag && m_drag->nativeResize}, {"freeResize",m_drag && m_drag->freeResize}, {"animating", m_animating}, {"innerGap", m_gap}, {"outerGap",m_outerGap},
         {"ignoreRules",QJsonObject{{"applications",m_ignoreApplicationText},{"titles",m_ignoreTitleText},{"roles",m_ignoreRoleText}}},
-        {"expandSingleWindow",m_expandSingleWindow}, {"springFrequency",m_omega}, {"animationTimeFactor",effects->animationTimeFactor()}, {"appearance",m_appearance->status()}, {"testMode", m_test}, {"outputs", outputs}, {"windows", windows}, {"metrics", metrics}}).toJson(QJsonDocument::Compact));
+        {"expandSingleWindow",m_expandSingleWindow}, {"springFrequency",m_omega}, {"animationTimeFactor",effects->animationTimeFactor()}, {"animation",QJsonObject{{"settings",m_animationSettings.document},{"profiles",m_animationSettings.profiles()},{"error",m_animationSettings.error},{"pending",m_pendingAnimationSettings.has_value()},
+            {"closing",closing},{"closingVisuals",int(m_closing.size())},{"completedCloses",qint64(m_closedAnimations)},{"textureCaptures",qint64(m_textureCaptures)},{"settling",distribution(m_settlingTimes)}}},
+        {"appearance",m_appearance->status()}, {"testMode", m_test}, {"outputs", outputs}, {"windows", windows}, {"metrics", metrics}}).toJson(QJsonDocument::Compact));
 }
 
 KWIN_EFFECT_FACTORY_SUPPORTED_ENABLED(FluidTiles, "metadata.json", return KWin::OffscreenEffect::supported();, return false;)

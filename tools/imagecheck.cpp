@@ -21,6 +21,13 @@ int main(int argc,char **argv) {
         const int y=std::clamp(int(std::round(p[1].toDouble()*image.height()/size[1].toDouble())),0,image.height()-1);
         const auto c=image.pixelColor(x,y);pixels.append(QJsonArray{c.red(),c.green(),c.blue(),c.alpha()});
     }
-    const auto result=QJsonDocument(QJsonObject{{"size",QJsonArray{image.width(),image.height()}},{"pixels",pixels}}).toJson(QJsonDocument::Compact);
+    QJsonObject output{{"size",QJsonArray{image.width(),image.height()}},{"pixels",pixels}};
+    if(spec["dominantRed"].toBool()) {
+        int count=0,left=image.width(),top=image.height(),right=0,bottom=0;
+        for(int y=0;y<image.height();++y)for(int x=0;x<image.width();++x){const auto c=image.pixelColor(x,y);
+            if(c.red()>60 && c.red()>2*c.green() && c.red()>2*c.blue()){++count;left=std::min(left,x);top=std::min(top,y);right=std::max(right,x);bottom=std::max(bottom,y);}}
+        output["redPixelCount"]=count;output["redBounds"]=QJsonArray{left,top,right,bottom};
+    }
+    const auto result=QJsonDocument(output).toJson(QJsonDocument::Compact);
     puts(result.constData());return 0;
 }

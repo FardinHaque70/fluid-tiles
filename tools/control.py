@@ -69,18 +69,18 @@ def stop():
     while status() is not None and time.monotonic()<deadline:time.sleep(.05)
     if status() is not None:raise RuntimeError("Native effect did not unload; package was not modified")
 
-def start():
+def start(*,enable_tiling=True):
     if not installed_path().exists():raise RuntimeError("Install the package first")
     if any(loaded(name) for name in LEGACY_PLUGINS):stop()
     try:
-        return start_installed()
+        return start_installed(enable_tiling=enable_tiling)
     except (RuntimeError,subprocess.CalledProcessError):
         # A failed activation must not leave a checked setting or a partially
         # running loader that can unexpectedly activate on the next reconfigure.
         stop()
         raise
 
-def start_installed():
+def start_installed(*,enable_tiling=True):
     set_autoload(True)
     if not loaded(PLUGIN):
         script_id=dbus("/Scripting","org.kde.kwin.Scripting.loadDeclarativeScript",payload_path()/"contents/ui/main.qml",PLUGIN)
@@ -96,7 +96,7 @@ def start_installed():
         if s is not None:
             expected=json.loads((installed_path()/"metadata.json").read_text())["KPlugin"]["Version"]
             if s["version"]!=expected:raise RuntimeError(f"Loaded version {s['version']} does not match installed {expected}")
-            if not s["enabled"]:
+            if enable_tiling and not s["enabled"]:
                 dbus("/org/kde/FluidTiles","org.kde.FluidTiles.SetEnabled","true")
                 s=status()
             return s
@@ -120,6 +120,24 @@ def migrate_appearance_settings():
     for key in ("AppearanceEnabled","TitlebarMode"):run("kwriteconfig6",*args,"--key",key,"--delete")
     run("kwriteconfig6",*args,"--key","AppearanceSettingsVersion","1")
 
+def migrate_animation_settings():
+    """Adopt Fluid once, retaining the previous spring as a recoverable preset."""
+    args=("--file","kwinrc","--group","Script-"+PLUGIN)
+    if run("kreadconfig6",*args,"--key","AnimationSettingsVersion","--default","0").stdout.strip()!="0":return
+    saved=run("kreadconfig6",*args,"--key","AnimationSettings").stdout.strip()
+    if not saved:
+        try:omega=float(run("kreadconfig6",*args,"--key","SpringFrequency","--default","24").stdout.strip())
+        except ValueError:omega=24
+        omega=max(8,min(60,omega))
+        catalog=json.loads((ROOT/"build/package/contents/data/animations/catalog.json").read_text())
+        profiles=next(p["profiles"] for p in catalog["presets"] if p["id"]=="classic")
+        for event,profile in profiles.items():
+            if event!="close":profile["curve"].update(mass=1,stiffness=omega*omega,damping=2*omega)
+        document={"version":1,"preset":"fluid","enabled":True,"speed":1,"overrides":{},"customPresets":[
+            {"id":"classic-previous","name":"Classic — previous settings","profiles":profiles}]}
+        run("kwriteconfig6",*args,"--key","AnimationSettings",json.dumps(document,ensure_ascii=False,separators=(",",":")))
+    run("kwriteconfig6",*args,"--key","AnimationSettingsVersion","1")
+
 def install():
     source=ROOT/"build/package"
     if not (source/"contents/native/kwin/effects/plugins/fluidtiles.so").is_file():
@@ -131,6 +149,10 @@ def install():
     launcher=settings_launcher()
     if launcher.exists() and "X-FluidTiles-Managed=true" not in launcher.read_text():
         raise RuntimeError("Refusing to replace an unrelated application launcher")
+    updating=dest.exists()
+    previous=status() if updating else None
+    was_loaded=loaded() if updating else False
+    autoload=run("kreadconfig6","--file","kwinrc","--group","Plugins","--key",PLUGIN+"Enabled","--default","false").stdout.strip().lower()=="true" if updating else False
     stop()
     # Preserve the early prototype's manual preferences when moving to the
     # standard KWin Script settings group. Existing GUI preferences win.
@@ -144,6 +166,7 @@ def install():
                 if old!=missing:run("kwriteconfig6","--file","kwinrc","--group","Script-"+PLUGIN,"--key",key,old)
     run("kwriteconfig6","--file","kwinrc","--group","Script-"+PLUGIN,"--key","SettingsVersion","1")
     migrate_appearance_settings()
+    migrate_animation_settings()
     dest.parent.mkdir(parents=True,exist_ok=True)
     # Stage before replacing only this project's package. Qt may retain the
     # QML module in memory; rebuilds of its bootstrap can require a new session.
@@ -171,6 +194,11 @@ def install():
         meta=json.loads((legacy/"metadata.json").read_text())
         if meta.get("KPlugin",{}).get("Id")==LEGACY_PLUGINS[0]:shutil.rmtree(legacy)
     install_settings_launcher()
+    # An update keeps both the Scripts checkbox and the separate emergency
+    # tiling state. First installation continues to leave the plugin disabled.
+    if was_loaded or previous is not None:
+        start(enable_tiling=previous is None or previous["enabled"])
+    set_autoload(autoload)
     print(f"Installed {dest}")
 
 def main():

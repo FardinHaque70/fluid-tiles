@@ -1,4 +1,75 @@
-# Fluid Tiles 0.5.4 validation
+# Fluid Tiles validation
+
+## Version 0.6.0 animation overhaul
+
+Validated 2026-11-05.
+
+The implementation includes the shared analytic spring/Bézier engine, independent
+geometry/opacity and event profiles, retained closing visuals, nine factory
+presets, the copied 19-curve HyprMod library, native KDE editing and unsaved
+preview, named custom presets, migration and activation-preserving updates.
+
+- **134,769 core checks** and **11,781 animation checks** pass. CTest also verifies
+  catalog regeneration/source hashes and real KConfig migration. The existing
+  appearance migration test passes. Python syntax and diff-whitespace checks pass.
+- The complete new animation suite passes at **100%, 145% and 200% scaling** on
+  the same native binary. Every factory preset opens and closes; coverage also
+  includes close during entrance, real midpoint geometry/opacity/outline pixels,
+  desktop-change cancellation, true renderer unload while closing, native state
+  interruptions, explicit float/retiling, repeated retargeting, settings deferred
+  during a held drag, Off, and idle capture/resource release.
+- The packaged KDE module passes preset selection, numeric/keyboard curve edits,
+  Save As while disabled, rename/delete, reload/Cancel, Defaults retention,
+  Apply persistence, hidden preview timer shutdown and unchanged activation.
+  Actual form captures are in each animation report directory.
+- Full baseline suites pass at **100% and 145%**, including native movement,
+  split resize, constraints, settings, restoration, unload/reactivation and
+  immutable payload updates. Updates retain animation preferences and activation.
+- A separate update audit passes for running, emergency-disabled and fully
+  disabled states, retaining animation preferences. Evidence:
+  `test-results/060-activation-update/activation-update.json`.
+- All **28 appearance cases**, singleton/native resize and Desktop Slide cases,
+  nine centered-float cases, the historical opening suite, twelve single-window
+  workflows with a real panel, and ten two-window orientation cases pass at 145%.
+- Twelve counterbalanced virtual runs compare Classic and Fluid across the three
+  scales. Both record **16.67 ms presentation p95** in each run. These are
+  synthetic 60 Hz outputs, not a physical-display benchmark. The diagnostics
+  expose refresh-relative missed-refresh estimates as well as paint intervals.
+
+Native binary SHA-256:
+`04c4a467034de8190c03f6ee423306a12aa5f77d82942ad5e11b1311d72d0e90`.
+
+Evidence: `test-results/060-verified-animations-{100,145,200}/animations.json`,
+`060-verified-appearance-145/appearance.json`,
+`060-verified-interactions-145/interactions.json`,
+`060-verified-float-145/float-center.json`,
+`060-verified-opening-145/opening.json`, `060-verified-single-145/single.json`,
+and `060-verified-pairs-145/pairs.json`, all beneath `test-results/`.
+Full baseline reports are `060-verified-baseline-{100,145}/integration.json`;
+the matching-binary index is `test-results/060-summary.json`.
+The native animation suite can be reproduced with:
+
+```sh
+FLUIDTILES_TEST_CONTROL=1 FLUIDTILES_TEST_DESKTOP_EFFECTS=1 \
+FLUIDTILES_TEST_ANIMATIONS=1 FLUIDTILES_TEST_SCALE=1.45 \
+FLUIDTILES_TEST_SESSION=test-session-v6-a145 \
+FLUIDTILES_TEST_RESULTS=test-results/060-verified-animations-145 \
+python3 tests/integration.py
+```
+
+Use short session paths: Wayland's Unix socket path must fit its 108-byte limit.
+All native testing uses the private `fluidtiles-test` socket and disposable
+D-Bus/config/runtime roots. No host input injection, live package installation,
+or host activation/preference changes were performed for this release.
+
+Physical 144 Hz motion, mixed-output/hotplug and real Activity-service behavior
+remain broader validation. In particular, the earlier application-specific
+Brave/Codex resize stalls/black bars have not been established fixed. Native
+application input regions continue to follow committed frames during transformed
+presentation outside Fluid Tiles' grabbed interactions. This release supplies no
+custom workspace, popup, blur, shadow or border-gradient animation.
+
+## Version 0.5.4
 
 Version 0.5.4 adds **Expand a single tiled window**, enabled by default in
 Layout & animation. A lone tile fills KWin's usable work area, preserving panel

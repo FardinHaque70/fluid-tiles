@@ -26,7 +26,7 @@ int main(int argc,char **argv) {
     dialog.addModule(metadata,{"fluidtiles-controller","KWin/Script"});
     dialog.setFaceType(KPageDialog::Plain);
     dialog.setWindowTitle("Fluid Tiles Settings");
-    dialog.resize(660,600);
+    dialog.resize(780,760);
     const bool test=qEnvironmentVariableIntValue("FLUIDTILES_SETTINGS_TEST")==1 && app.arguments().size()==2;
     int result=0;
     if (test) QTimer::singleShot(std::clamp(qEnvironmentVariableIntValue("FLUIDTILES_SETTINGS_HOLD_MS"),800,30000),&dialog,[&] {

@@ -4,23 +4,26 @@
  <widget class="QWidget" name="FluidTilesConfig">
   <property name="windowTitle"><string>Fluid Tiles</string></property>
   <property name="minimumSize"><size><width>560</width><height>440</height></size></property>
+  <widget class="QDoubleSpinBox" name="kcfg_SpringFrequency"><property name="visible"><bool>false</bool></property><property name="minimum"><double>8</double></property><property name="maximum"><double>60</double></property></widget>
   <layout class="QVBoxLayout" name="mainLayout">
    <item><widget class="QTabWidget" name="tabs">
     <widget class="QWidget" name="layoutTab">
-     <attribute name="title"><string>Layout &amp; animation</string></attribute>
+     <attribute name="title"><string>Layout</string></attribute>
      <layout class="QVBoxLayout" name="layoutPage">
-      <item><widget class="QLabel" name="layoutHelp"><property name="text"><string>Adjust window spacing and how quickly layout changes settle.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+      <item><widget class="QLabel" name="layoutHelp"><property name="text"><string>Adjust window spacing and single-window behavior.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
       <item><layout class="QFormLayout" name="layoutForm">
        <item row="0" column="0"><widget class="QLabel" name="innerLabel"><property name="text"><string>Gap between windows:</string></property><property name="buddy"><cstring>kcfg_InnerGap</cstring></property></widget></item>
        <item row="0" column="1"><widget class="QDoubleSpinBox" name="kcfg_InnerGap"><property name="decimals"><number>1</number></property><property name="maximum"><double>80.000000000000000</double></property><property name="suffix"><string> px</string></property></widget></item>
        <item row="1" column="0"><widget class="QLabel" name="outerLabel"><property name="text"><string>Gap around the layout:</string></property><property name="buddy"><cstring>kcfg_OuterGap</cstring></property></widget></item>
        <item row="1" column="1"><widget class="QDoubleSpinBox" name="kcfg_OuterGap"><property name="decimals"><number>1</number></property><property name="maximum"><double>80.000000000000000</double></property><property name="suffix"><string> px</string></property></widget></item>
-       <item row="2" column="0"><widget class="QLabel" name="speedLabel"><property name="text"><string>Animation responsiveness:</string></property><property name="buddy"><cstring>kcfg_SpringFrequency</cstring></property></widget></item>
-       <item row="2" column="1"><widget class="QDoubleSpinBox" name="kcfg_SpringFrequency"><property name="decimals"><number>0</number></property><property name="minimum"><double>8.000000000000000</double></property><property name="maximum"><double>60.000000000000000</double></property><property name="singleStep"><double>2.000000000000000</double></property></widget></item>
       </layout></item>
       <item><widget class="QCheckBox" name="kcfg_ExpandSingleWindow"><property name="text"><string>Expand a single tiled window</string></property><property name="toolTip"><string>A lone tile fills the available desktop without gaps, outlines or rounded corners. Panels remain visible. Normal spacing and appearance return when another tile opens.</string></property></widget></item>
       <item><spacer name="layoutSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>160</height></size></property></spacer></item>
      </layout>
+    </widget>
+    <widget class="QWidget" name="animationsTab">
+     <attribute name="title"><string>Animations</string></attribute>
+     <layout class="QVBoxLayout" name="animationsPage"><item><widget class="AnimationEditor" name="kcfg_AnimationSettings"/></item></layout>
     </widget>
     <widget class="QWidget" name="rulesTab">
      <attribute name="title"><string>Ignored windows</string></attribute>
@@ -87,7 +90,7 @@ firefox</string></property><property name="maximumHeight"><number>80</number></p
    </widget></item>
   </layout>
  </widget>
- <customwidgets><customwidget><class>KColorButton</class><extends>QPushButton</extends><header>kcolorbutton.h</header></customwidget></customwidgets>
+ <customwidgets><customwidget><class>AnimationEditor</class><extends>QWidget</extends><header>animationeditor.h</header><container>1</container></customwidget><customwidget><class>KColorButton</class><extends>QPushButton</extends><header>kcolorbutton.h</header></customwidget></customwidgets>
  <resources/>
  <connections>
   <connection><sender>kcfg_UseSystemBorderColors</sender><signal>toggled(bool)</signal><receiver>customColors</receiver><slot>setDisabled(bool)</slot></connection>

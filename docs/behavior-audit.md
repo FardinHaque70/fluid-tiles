@@ -1,5 +1,62 @@
 # Fluid Tiles behavior audit
 
+## Version 0.6.0 animation overhaul
+
+Source audit, 2026-11-04: Hyprland `988b94362e2700b4b07cb7247d81a86bf065b1fe`
+(`src/desktop/view/animationControllers/WindowAnimationController.cpp`,
+`window/WindowPresentation.cpp`, `window/Window.cpp`,
+`src/layout/supplementary/DragController.cpp`, `src/animation/AnimationManager.cpp`,
+`src/config/shared/animation/AnimationTree.cpp`, and `example/hyprland.lua`),
+hyprutils `7e1f69209cd910615d0573a93fa970408f643539`
+(`AnimatedVariable.hpp/.cpp`, `Spring.cpp`, `BezierCurve.cpp`,
+`AnimationManager.cpp`). The existing pinned Krohnkite outer `addWindow`, inner
+`shouldIgnore`/`shouldFloat`, native-interaction commit guard and XML defaults
+were re-inspected. Admission, insertion and floating-exclusion policies are not
+changed by this feature.
+
+Hyprland separates windowsIn/windowsOut/windowsMove and fadeIn/fadeOut; springs
+advance analytic physics using elapsed time, while Béziers invert x(t) against
+elapsed duration. Pointer-held targets are warped directly in DragController.
+Fluid Tiles retains its immediate pointer tracking and physical per-edge spring
+velocity on retarget. Independent geometry/opacity tracks and per-event profiles
+now cover opening, closing, rearrangement, release settling and explicit float
+transitions. The global speed scales time for both curve types. KDE zero-duration
+settings snap to goals and release closing visuals. Spring cutoffs use physical
+pixels; Classic retains the previous thresholds.
+
+KWin-specific lifecycle adaptation: a closing record retains EffectWindow's
+deleted reference and the last live presentation/style/output. It leaves the
+layout immediately and never writes client geometry. Source clipping and the
+outline pass use frozen style without querying deleted client appearance policy.
+The final reference is released after all drawing and ownership maps are cleaned
+up. WindowAddedGrabRole/WindowClosedGrabRole coordinate with KWin 6.8.2's scripted
+Scale/Fade effects; roles are removed only if owned by Fluid Tiles. Immediate
+close skips defer grab cleanup through signal dispatch. `skipsCloseAnimation`,
+full-screen effects, lock, output loss, disable and unload release lifecycle
+ownership. Ordinary floats, popups and workspace effects remain with KDE.
+
+The Fluid preset preserves the user's requested desktop-centered 65% entrance.
+Imported pops use their destination center; slides use the usable KWin work area.
+These are explicit adaptations, not complete Hyprland equivalence. Compositor
+advancement remains paint-driven; no animation timer runs in the native effect.
+Ordinary motion schedules conservative old/current/native visual bounds including
+shadows instead of unconditional whole-screen repaint. Native input regions still
+follow committed frames outside Fluid Tiles' grabbed interactions.
+
+Preset recipes and licenses are copied from HyDE `fa2fd57a`, HyprMod `b475087a`,
+and ML4W `9ead14e7`, with complete pins/hashes in the packaged source manifest.
+The catalog compiler parses literals without running upstream code; defaults and
+inheritance are resolved explicitly. The [adaptation record](../package/contents/data/animations/ADAPTATIONS.md)
+contains credits, mappings, omitted effects and original license locations.
+The native KDE editor and its preview share the engine and settings resolver.
+One-time migration archives the previous frequency before selecting Fluid;
+future installs and Defaults do not remove custom presets.
+
+Verification and remaining physical-display limits are recorded in
+[VALIDATION.md](../VALIDATION.md). No source audit or virtual-output timing result
+is a physical Hyprland-versus-KWin smoothness comparison.
+
+
 ## Version 0.5.4 single-window expansion
 
 The user requested an enabled-by-default option for a lone window to fill the

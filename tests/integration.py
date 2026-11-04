@@ -25,6 +25,7 @@ from interaction_behaviors import run_interaction_audit
 from pair_behaviors import run_pair_audit
 from opening_behaviors import run_opening_audit
 from single_behaviors import run_single_audit
+from animation_behaviors import run_animation_audit, run_activation_update_audit
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / os.environ.get("FLUIDTILES_TEST_RESULTS","test-results")
@@ -98,6 +99,10 @@ def inner():
                                     ('Effect-fluidtiles','SpringFrequency','30'),('Script-fluidtiles-controller','InnerGap','7')]:
                 subprocess.run(['kwriteconfig6','--file','kwinrc','--group',group,'--key',key,value],check=True)
             subprocess.run([sys.executable,str(ROOT/"tools/control.py"),"install"],check=True,stdout=log,stderr=log,timeout=15)
+            migrated_animation=json.loads(subprocess.check_output(['kreadconfig6','--file','kwinrc','--group','Script-fluidtiles-controller','--key','AnimationSettings'],text=True))
+            assert migrated_animation['preset']=='fluid'
+            backup=next(p for p in migrated_animation['customPresets'] if p['id']=='classic-previous')
+            assert backup['profiles']['open']['curve']['stiffness']==900,'Previous animation preference was not backed up'
             for key,value in [('InnerGap','7'),('OuterGap','9'),('SpringFrequency','30')]:
                 assert subprocess.check_output(['kreadconfig6','--file','kwinrc','--group','Script-fluidtiles-controller',
                     '--key',key],text=True).strip()==value
@@ -134,6 +139,12 @@ def inner():
             ["qdbus6","org.kde.KWin","/KWin","org.kde.KWin.supportInformation"],text=True))
         if os.environ.get('FLUIDTILES_TEST_SINGLE')=='1':
             report=run_single_audit((call,status,wait_for,tiled,settled,ROOT),env,children,log,RESULTS)
+            print(json.dumps(report),flush=True);return
+        if os.environ.get('FLUIDTILES_TEST_ANIMATIONS')=='1':
+            report=run_animation_audit((call,status,wait_for,tiled,settled,ROOT),env,children,log,RESULTS)
+            print(json.dumps({'pass':report['pass'],'presets':list(report['presets']),'report':str(RESULTS/'animations.json')}),flush=True);return
+        if os.environ.get('FLUIDTILES_TEST_ACTIVATION_UPDATE')=='1':
+            report=run_activation_update_audit((call,status,wait_for,tiled,settled,ROOT),env,log,RESULTS)
             print(json.dumps(report),flush=True);return
         if os.environ.get('FLUIDTILES_TEST_OPENING')=='1':
             report=run_opening_audit((call,status,wait_for,tiled,settled,ROOT),env,children,log,RESULTS)
@@ -372,6 +383,8 @@ def inner():
         if os.environ.get('FLUIDTILES_TEST_CONTROL')=='1':
             old_revision=revision
             marker=ROOT/'build/package/audit-update.txt'
+            animation_before_update=status()['animation']['settings']
+            enabled_before_update=status()['enabled']
             assert not marker.exists()
             try:
                 marker.write_text('Disposable integration update marker\n')
@@ -379,11 +392,13 @@ def inner():
             finally:marker.unlink(missing_ok=True)
             revision=json.loads((package/'metadata.json').read_text())['X-FluidTiles-Revision']
             assert revision!=old_revision
+            assert status()['enabled']==enabled_before_update,'Update changed the current activation state'
             subprocess.run(['kwriteconfig6','--file','kwinrc','--group','Plugins','--key','fluidtiles-controllerEnabled','true'],check=True)
             subprocess.run(['qdbus6','org.kde.KWin','/KWin','org.kde.KWin.reconfigure'],check=True,stdout=log)
             wait_for(lambda:status()['enabled']);wait_for(lambda:len(tiled())==2);wait_for(settled)
             assert Path(status()['libraryPath']).resolve()==(package/'versions'/revision/'contents/native/kwin/effects/plugins/fluidtiles.so').resolve()
             assert status()['innerGap']==10 and status()['outerGap']==10 and status()['springFrequency']==24,'Reinstall reimported legacy values over Defaults'
+            assert status()['animation']['settings']==animation_before_update,'Reinstall changed animation preferences'
             update_verified=True
         report={"pass":True,"scale":os.environ.get("FLUIDTILES_TEST_SCALE","1.45"),
             "native_binary_sha256":hashlib.sha256((ROOT/'build/plugins/kwin/effects/plugins/fluidtiles.so').read_bytes()).hexdigest(),

@@ -1,0 +1,1679 @@
+{
+  "version": 1,
+  "presets": [
+    {
+      "id": "fluid",
+      "name": "Fluid — default",
+      "description": "Responsive, controlled motion. Opens from the desktop center.",
+      "source": "Fluid Tiles",
+      "profiles": {
+        "open": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 784,
+            "damping": 56
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "desktop",
+          "direction": "nearest",
+          "size": 0.65,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0.33,
+            "y1": 1,
+            "x2": 0.68,
+            "y2": 1,
+            "duration": 140
+          }
+        },
+        "close": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.32,
+            "y1": 0,
+            "x2": 0.67,
+            "y2": 0,
+            "duration": 140
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.9,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0,
+            "y1": 0,
+            "x2": 1,
+            "y2": 1,
+            "duration": 120
+          }
+        },
+        "rearrange": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 1024,
+            "damping": 64
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.65
+        },
+        "drop": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 1296,
+            "damping": 72
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.65
+        },
+        "float": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 784,
+            "damping": 56
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.65
+        }
+      }
+    },
+    {
+      "id": "hyprland",
+      "name": "Hyprland Example",
+      "description": "Adapted for Fluid Tiles. Original window curves and timing; KDE owns workspace and shell effects.",
+      "source": "hyprland-hyprland.lua",
+      "profiles": {
+        "open": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1.0,
+            "stiffness": 238.1191,
+            "damping": 24.21279333
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.87,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0.5,
+            "y1": 0.5,
+            "x2": 0.75,
+            "y2": 1.0,
+            "duration": 173.0
+          }
+        },
+        "close": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.0,
+            "y1": 0.0,
+            "x2": 1.0,
+            "y2": 1.0,
+            "duration": 149.0
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.87,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0.5,
+            "y1": 0.5,
+            "x2": 0.75,
+            "y2": 1.0,
+            "duration": 146.0
+          }
+        },
+        "rearrange": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1.0,
+            "stiffness": 238.1191,
+            "damping": 24.21279333
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        },
+        "drop": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "spring",
+            "mass": 1.0,
+            "stiffness": 238.1191,
+            "damping": 24.21279333
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        },
+        "float": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "spring",
+            "mass": 1.0,
+            "stiffness": 238.1191,
+            "damping": 24.21279333
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        }
+      }
+    },
+    {
+      "id": "hyde-fast",
+      "name": "HyDE Fast",
+      "description": "Adapted for Fluid Tiles. Original window curves and timing; KDE owns workspace and shell effects.",
+      "source": "hyde-fast.lua",
+      "profiles": {
+        "open": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.6,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 250.0
+          }
+        },
+        "close": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.6,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 250.0
+          }
+        },
+        "rearrange": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.6
+        },
+        "drop": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.6
+        },
+        "float": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.6
+        }
+      }
+    },
+    {
+      "id": "hyde-optimized",
+      "name": "HyDE Optimized",
+      "description": "Adapted for Fluid Tiles. Original window curves and timing; KDE owns workspace and shell effects.",
+      "source": "hyde-optimized.lua",
+      "profiles": {
+        "open": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.07,
+            "y1": 0.88,
+            "x2": 0.04,
+            "y2": 0.99,
+            "duration": 320.0
+          },
+          "fade": true,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.8,
+            "x2": 0.1,
+            "y2": 0.97,
+            "duration": 180.0
+          }
+        },
+        "close": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.0,
+            "y1": 0.48,
+            "x2": 0.38,
+            "y2": 1.0,
+            "duration": 280.0
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.8,
+            "x2": 0.1,
+            "y2": 0.97,
+            "duration": 180.0
+          }
+        },
+        "rearrange": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.85,
+            "x2": 0.03,
+            "y2": 0.97,
+            "duration": 300.0
+          },
+          "fade": false,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        },
+        "drop": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.85,
+            "x2": 0.03,
+            "y2": 0.97,
+            "duration": 300.0
+          },
+          "fade": false,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        },
+        "float": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.85,
+            "x2": 0.03,
+            "y2": 0.97,
+            "duration": 300.0
+          },
+          "fade": false,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        }
+      }
+    },
+    {
+      "id": "popin-soft",
+      "name": "Popin Soft — HyDE / ML4W",
+      "description": "Adapted for Fluid Tiles. Original window curves and timing; KDE owns workspace and shell effects.",
+      "source": "hyde-end4.lua",
+      "profiles": {
+        "open": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.6,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          }
+        },
+        "close": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.3,
+            "y1": 0.0,
+            "x2": 0.8,
+            "y2": 0.15,
+            "duration": 300.0
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.6,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          }
+        },
+        "rearrange": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.6
+        },
+        "drop": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.6
+        },
+        "float": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1.0,
+            "duration": 300.0
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.6
+        }
+      }
+    },
+    {
+      "id": "hyde-macos",
+      "name": "HyDE macOS",
+      "description": "Adapted for Fluid Tiles. Original window curves and timing; KDE owns workspace and shell effects.",
+      "source": "hyde-macos.lua",
+      "profiles": {
+        "open": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1.0,
+            "stiffness": 110.0,
+            "damping": 16.0
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.9,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0,
+            "y1": 0.75,
+            "x2": 0.15,
+            "y2": 1,
+            "duration": 800.0
+          }
+        },
+        "close": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1.0,
+            "stiffness": 80.0,
+            "damping": 10.0
+          },
+          "fade": true,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.9,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0,
+            "y1": 0.75,
+            "x2": 0.15,
+            "y2": 1,
+            "duration": 800.0
+          }
+        },
+        "rearrange": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.25,
+            "y1": 0.1,
+            "x2": 0.25,
+            "y2": 1.0,
+            "duration": 500.0
+          },
+          "fade": false,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        },
+        "drop": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.25,
+            "y1": 0.1,
+            "x2": 0.25,
+            "y2": 1.0,
+            "duration": 500.0
+          },
+          "fade": false,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        },
+        "float": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.25,
+            "y1": 0.1,
+            "x2": 0.25,
+            "y2": 1.0,
+            "duration": 500.0
+          },
+          "fade": false,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        }
+      }
+    },
+    {
+      "id": "ml4w-dynamic",
+      "name": "ML4W Dynamic",
+      "description": "Adapted for Fluid Tiles. Original window curves and timing; KDE owns workspace and shell effects.",
+      "source": "ml4w-animations-dynamic.lua",
+      "profiles": {
+        "open": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.1,
+            "y1": 1.1,
+            "x2": 0.1,
+            "y2": 1.1,
+            "duration": 600.0
+          },
+          "fade": true,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0,
+            "y1": 0.75,
+            "x2": 0.15,
+            "y2": 1,
+            "duration": 1000.0
+          }
+        },
+        "close": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.3,
+            "y1": -0.3,
+            "x2": 0.0,
+            "y2": 1.0,
+            "duration": 500.0
+          },
+          "fade": true,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0,
+            "y1": 0.75,
+            "x2": 0.15,
+            "y2": 1,
+            "duration": 1000.0
+          }
+        },
+        "rearrange": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.9,
+            "x2": 0.1,
+            "y2": 1.05,
+            "duration": 500.0
+          },
+          "fade": false,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        },
+        "drop": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.9,
+            "x2": 0.1,
+            "y2": 1.05,
+            "duration": 500.0
+          },
+          "fade": false,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        },
+        "float": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.9,
+            "x2": 0.1,
+            "y2": 1.05,
+            "duration": 500.0
+          },
+          "fade": false,
+          "style": "slide",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0
+        }
+      }
+    },
+    {
+      "id": "classic",
+      "name": "Classic",
+      "description": "Previous Fluid Tiles spring; KDE handles closing.",
+      "source": "Fluid Tiles 0.5.4",
+      "profiles": {
+        "open": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 576,
+            "damping": 48,
+            "classic": true
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "desktop",
+          "direction": "nearest",
+          "size": 0.65
+        },
+        "close": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 576,
+            "damping": 48,
+            "classic": true
+          },
+          "fade": false,
+          "style": "system",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.65
+        },
+        "rearrange": {
+          "enabled": true,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 576,
+            "damping": 48,
+            "classic": true
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.65
+        },
+        "drop": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 576,
+            "damping": 48,
+            "classic": true
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.65
+        },
+        "float": {
+          "enabled": true,
+          "inherit": true,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 576,
+            "damping": 48,
+            "classic": true
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.65
+        }
+      }
+    },
+    {
+      "id": "off",
+      "name": "Off",
+      "description": "Immediate managed-window transitions.",
+      "source": "Fluid Tiles",
+      "profiles": {
+        "open": {
+          "enabled": false,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 784,
+            "damping": 56
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "desktop",
+          "direction": "nearest",
+          "size": 0.65,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0.33,
+            "y1": 1,
+            "x2": 0.68,
+            "y2": 1,
+            "duration": 140
+          }
+        },
+        "close": {
+          "enabled": false,
+          "inherit": false,
+          "curve": {
+            "type": "bezier",
+            "x1": 0.32,
+            "y1": 0,
+            "x2": 0.67,
+            "y2": 0,
+            "duration": 140
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.9,
+          "opacity": {
+            "type": "bezier",
+            "x1": 0,
+            "y1": 0,
+            "x2": 1,
+            "y2": 1,
+            "duration": 120
+          }
+        },
+        "rearrange": {
+          "enabled": false,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 1024,
+            "damping": 64
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.65
+        },
+        "drop": {
+          "enabled": false,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 1296,
+            "damping": 72
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.65
+        },
+        "float": {
+          "enabled": false,
+          "inherit": false,
+          "curve": {
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 784,
+            "damping": 56
+          },
+          "fade": false,
+          "style": "pop",
+          "origin": "tile",
+          "direction": "nearest",
+          "size": 0.65
+        }
+      }
+    }
+  ],
+  "curves": {
+    "hyprland/default": {
+      "type": "bezier",
+      "x1": 0,
+      "y1": 0.75,
+      "x2": 0.15,
+      "y2": 1,
+      "duration": 250
+    },
+    "hyprland/easeOutQuint": {
+      "type": "bezier",
+      "x1": 0.23,
+      "y1": 1.0,
+      "x2": 0.32,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyprland/easeInOutCubic": {
+      "type": "bezier",
+      "x1": 0.65,
+      "y1": 0.05,
+      "x2": 0.36,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyprland/linear": {
+      "type": "bezier",
+      "x1": 0.0,
+      "y1": 0.0,
+      "x2": 1.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyprland/almostLinear": {
+      "type": "bezier",
+      "x1": 0.5,
+      "y1": 0.5,
+      "x2": 0.75,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyprland/quick": {
+      "type": "bezier",
+      "x1": 0.15,
+      "y1": 0.0,
+      "x2": 0.1,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyprland/easy": {
+      "type": "spring",
+      "mass": 1.0,
+      "stiffness": 238.1191,
+      "damping": 24.21279333
+    },
+    "hyde-fast/default": {
+      "type": "bezier",
+      "x1": 0,
+      "y1": 0.75,
+      "x2": 0.15,
+      "y2": 1,
+      "duration": 250
+    },
+    "hyde-fast/linear": {
+      "type": "bezier",
+      "x1": 0.0,
+      "y1": 0.0,
+      "x2": 1.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-fast/md3_standard": {
+      "type": "bezier",
+      "x1": 0.2,
+      "y1": 0.0,
+      "x2": 0.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-fast/md3_decel": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.7,
+      "x2": 0.1,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-fast/md3_accel": {
+      "type": "bezier",
+      "x1": 0.3,
+      "y1": 0.0,
+      "x2": 0.8,
+      "y2": 0.15,
+      "duration": 250
+    },
+    "hyde-fast/overshot": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.9,
+      "x2": 0.1,
+      "y2": 1.1,
+      "duration": 250
+    },
+    "hyde-fast/crazyshot": {
+      "type": "bezier",
+      "x1": 0.1,
+      "y1": 1.5,
+      "x2": 0.76,
+      "y2": 0.92,
+      "duration": 250
+    },
+    "hyde-fast/hyprnostretch": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.9,
+      "x2": 0.1,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-fast/fluent_decel": {
+      "type": "bezier",
+      "x1": 0.1,
+      "y1": 1.0,
+      "x2": 0.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-fast/easeInOutCirc": {
+      "type": "bezier",
+      "x1": 0.85,
+      "y1": 0.0,
+      "x2": 0.15,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-fast/easeOutCirc": {
+      "type": "bezier",
+      "x1": 0.0,
+      "y1": 0.55,
+      "x2": 0.45,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-fast/easeOutExpo": {
+      "type": "bezier",
+      "x1": 0.16,
+      "y1": 1.0,
+      "x2": 0.3,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-optimized/default": {
+      "type": "bezier",
+      "x1": 0,
+      "y1": 0.75,
+      "x2": 0.15,
+      "y2": 1,
+      "duration": 250
+    },
+    "hyde-optimized/wind": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.85,
+      "x2": 0.03,
+      "y2": 0.97,
+      "duration": 250
+    },
+    "hyde-optimized/winIn": {
+      "type": "bezier",
+      "x1": 0.07,
+      "y1": 0.88,
+      "x2": 0.04,
+      "y2": 0.99,
+      "duration": 250
+    },
+    "hyde-optimized/winOut": {
+      "type": "bezier",
+      "x1": 0.2,
+      "y1": -0.15,
+      "x2": 0.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-optimized/liner": {
+      "type": "bezier",
+      "x1": 1.0,
+      "y1": 1.0,
+      "x2": 1.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-optimized/md3_standard": {
+      "type": "bezier",
+      "x1": 0.12,
+      "y1": 0.0,
+      "x2": 0.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-optimized/md3_decel": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.8,
+      "x2": 0.1,
+      "y2": 0.97,
+      "duration": 250
+    },
+    "hyde-optimized/md3_accel": {
+      "type": "bezier",
+      "x1": 0.2,
+      "y1": 0.0,
+      "x2": 0.8,
+      "y2": 0.08,
+      "duration": 250
+    },
+    "hyde-optimized/overshot": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.85,
+      "x2": 0.07,
+      "y2": 1.04,
+      "duration": 250
+    },
+    "hyde-optimized/crazyshot": {
+      "type": "bezier",
+      "x1": 0.1,
+      "y1": 1.22,
+      "x2": 0.68,
+      "y2": 0.98,
+      "duration": 250
+    },
+    "hyde-optimized/hyprnostretch": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.82,
+      "x2": 0.03,
+      "y2": 0.94,
+      "duration": 250
+    },
+    "hyde-optimized/menu_decel": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.82,
+      "x2": 0.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-optimized/menu_accel": {
+      "type": "bezier",
+      "x1": 0.2,
+      "y1": 0.0,
+      "x2": 0.82,
+      "y2": 0.1,
+      "duration": 250
+    },
+    "hyde-optimized/easeInOutCirc": {
+      "type": "bezier",
+      "x1": 0.75,
+      "y1": 0.0,
+      "x2": 0.15,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-optimized/easeOutCirc": {
+      "type": "bezier",
+      "x1": 0.0,
+      "y1": 0.48,
+      "x2": 0.38,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-optimized/easeOutExpo": {
+      "type": "bezier",
+      "x1": 0.1,
+      "y1": 0.94,
+      "x2": 0.23,
+      "y2": 0.98,
+      "duration": 250
+    },
+    "hyde-optimized/softAcDecel": {
+      "type": "bezier",
+      "x1": 0.2,
+      "y1": 0.2,
+      "x2": 0.15,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-optimized/md2": {
+      "type": "bezier",
+      "x1": 0.3,
+      "y1": 0.0,
+      "x2": 0.15,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-optimized/OutBack": {
+      "type": "bezier",
+      "x1": 0.28,
+      "y1": 1.4,
+      "x2": 0.58,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "popin-soft/default": {
+      "type": "bezier",
+      "x1": 0,
+      "y1": 0.75,
+      "x2": 0.15,
+      "y2": 1,
+      "duration": 250
+    },
+    "popin-soft/linear": {
+      "type": "bezier",
+      "x1": 0.0,
+      "y1": 0.0,
+      "x2": 1.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "popin-soft/md3_standard": {
+      "type": "bezier",
+      "x1": 0.2,
+      "y1": 0.0,
+      "x2": 0.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "popin-soft/md3_decel": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.7,
+      "x2": 0.1,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "popin-soft/md3_accel": {
+      "type": "bezier",
+      "x1": 0.3,
+      "y1": 0.0,
+      "x2": 0.8,
+      "y2": 0.15,
+      "duration": 250
+    },
+    "popin-soft/overshot": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.9,
+      "x2": 0.1,
+      "y2": 1.1,
+      "duration": 250
+    },
+    "popin-soft/crazyshot": {
+      "type": "bezier",
+      "x1": 0.1,
+      "y1": 1.5,
+      "x2": 0.76,
+      "y2": 0.92,
+      "duration": 250
+    },
+    "popin-soft/hyprnostretch": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.9,
+      "x2": 0.1,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "popin-soft/menu_decel": {
+      "type": "bezier",
+      "x1": 0.1,
+      "y1": 1.0,
+      "x2": 0.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "popin-soft/menu_accel": {
+      "type": "bezier",
+      "x1": 0.38,
+      "y1": 0.04,
+      "x2": 1.0,
+      "y2": 0.07,
+      "duration": 250
+    },
+    "popin-soft/easeInOutCirc": {
+      "type": "bezier",
+      "x1": 0.85,
+      "y1": 0.0,
+      "x2": 0.15,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "popin-soft/easeOutCirc": {
+      "type": "bezier",
+      "x1": 0.0,
+      "y1": 0.55,
+      "x2": 0.45,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "popin-soft/easeOutExpo": {
+      "type": "bezier",
+      "x1": 0.16,
+      "y1": 1.0,
+      "x2": 0.3,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "popin-soft/softAcDecel": {
+      "type": "bezier",
+      "x1": 0.26,
+      "y1": 0.26,
+      "x2": 0.15,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "popin-soft/md2": {
+      "type": "bezier",
+      "x1": 0.4,
+      "y1": 0.0,
+      "x2": 0.2,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "hyde-macos/default": {
+      "type": "bezier",
+      "x1": 0,
+      "y1": 0.75,
+      "x2": 0.15,
+      "y2": 1,
+      "duration": 250
+    },
+    "hyde-macos/macOpen": {
+      "type": "spring",
+      "mass": 1.0,
+      "stiffness": 110.0,
+      "damping": 16.0
+    },
+    "hyde-macos/macBounce": {
+      "type": "spring",
+      "mass": 1.0,
+      "stiffness": 80.0,
+      "damping": 10.0
+    },
+    "hyde-macos/macSmooth": {
+      "type": "bezier",
+      "x1": 0.25,
+      "y1": 0.1,
+      "x2": 0.25,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "ml4w-dynamic/default": {
+      "type": "bezier",
+      "x1": 0,
+      "y1": 0.75,
+      "x2": 0.15,
+      "y2": 1,
+      "duration": 250
+    },
+    "ml4w-dynamic/wind": {
+      "type": "bezier",
+      "x1": 0.05,
+      "y1": 0.9,
+      "x2": 0.1,
+      "y2": 1.05,
+      "duration": 250
+    },
+    "ml4w-dynamic/winIn": {
+      "type": "bezier",
+      "x1": 0.1,
+      "y1": 1.1,
+      "x2": 0.1,
+      "y2": 1.1,
+      "duration": 250
+    },
+    "ml4w-dynamic/winOut": {
+      "type": "bezier",
+      "x1": 0.3,
+      "y1": -0.3,
+      "x2": 0.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "ml4w-dynamic/liner": {
+      "type": "bezier",
+      "x1": 1.0,
+      "y1": 1.0,
+      "x2": 1.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "ease": {
+      "type": "bezier",
+      "x1": 0.25,
+      "y1": 0.1,
+      "x2": 0.25,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeIn": {
+      "type": "bezier",
+      "x1": 0.42,
+      "y1": 0.0,
+      "x2": 1.0,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeOut": {
+      "type": "bezier",
+      "x1": 0.0,
+      "y1": 0.0,
+      "x2": 0.58,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInOut": {
+      "type": "bezier",
+      "x1": 0.42,
+      "y1": 0.0,
+      "x2": 0.58,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInSine": {
+      "type": "bezier",
+      "x1": 0.12,
+      "y1": 0.0,
+      "x2": 0.39,
+      "y2": 0.0,
+      "duration": 250
+    },
+    "easeOutSine": {
+      "type": "bezier",
+      "x1": 0.61,
+      "y1": 1.0,
+      "x2": 0.88,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInOutSine": {
+      "type": "bezier",
+      "x1": 0.37,
+      "y1": 0.0,
+      "x2": 0.63,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInQuad": {
+      "type": "bezier",
+      "x1": 0.11,
+      "y1": 0.0,
+      "x2": 0.5,
+      "y2": 0.0,
+      "duration": 250
+    },
+    "easeOutQuad": {
+      "type": "bezier",
+      "x1": 0.5,
+      "y1": 1.0,
+      "x2": 0.89,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInOutQuad": {
+      "type": "bezier",
+      "x1": 0.45,
+      "y1": 0.0,
+      "x2": 0.55,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInCubic": {
+      "type": "bezier",
+      "x1": 0.32,
+      "y1": 0.0,
+      "x2": 0.67,
+      "y2": 0.0,
+      "duration": 250
+    },
+    "easeOutCubic": {
+      "type": "bezier",
+      "x1": 0.33,
+      "y1": 1.0,
+      "x2": 0.68,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInOutCubic": {
+      "type": "bezier",
+      "x1": 0.65,
+      "y1": 0.0,
+      "x2": 0.35,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInExpo": {
+      "type": "bezier",
+      "x1": 0.7,
+      "y1": 0.0,
+      "x2": 0.84,
+      "y2": 0.0,
+      "duration": 250
+    },
+    "easeOutExpo": {
+      "type": "bezier",
+      "x1": 0.16,
+      "y1": 1.0,
+      "x2": 0.3,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInOutExpo": {
+      "type": "bezier",
+      "x1": 0.87,
+      "y1": 0.0,
+      "x2": 0.13,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInBack": {
+      "type": "bezier",
+      "x1": 0.36,
+      "y1": 0.0,
+      "x2": 0.66,
+      "y2": -0.56,
+      "duration": 250
+    },
+    "easeOutBack": {
+      "type": "bezier",
+      "x1": 0.34,
+      "y1": 1.56,
+      "x2": 0.64,
+      "y2": 1.0,
+      "duration": 250
+    },
+    "easeInOutBack": {
+      "type": "bezier",
+      "x1": 0.68,
+      "y1": -0.6,
+      "x2": 0.32,
+      "y2": 1.6,
+      "duration": 250
+    }
+  },
+  "provenance": [
+    {
+      "file": "hyprland-hyprland.lua",
+      "repository": "hyprwm/Hyprland",
+      "revision": "988b94362e2700b4b07cb7247d81a86bf065b1fe",
+      "path": "example/hyprland.lua",
+      "url": "https://raw.githubusercontent.com/hyprwm/Hyprland/988b94362e2700b4b07cb7247d81a86bf065b1fe/example/hyprland.lua",
+      "sha256": "5553823a068db8b7a8a8db08fdb27c26fd5fda7e6f4a3b3cf059c0829dfb1148"
+    },
+    {
+      "file": "hyde-fast.lua",
+      "repository": "HyDE-Project/HyDE",
+      "revision": "fa2fd57afc7203b1b5653d3271f3a57ea3873f97",
+      "path": "Configs/.local/share/hypr/lua/animations/fast.lua",
+      "url": "https://raw.githubusercontent.com/HyDE-Project/HyDE/fa2fd57afc7203b1b5653d3271f3a57ea3873f97/Configs/.local/share/hypr/lua/animations/fast.lua",
+      "sha256": "081a86b65a7c58c525f9cf2cfc322fc41ec1e7721d632fe475e85aef84ce3a0e"
+    },
+    {
+      "file": "hyde-optimized.lua",
+      "repository": "HyDE-Project/HyDE",
+      "revision": "fa2fd57afc7203b1b5653d3271f3a57ea3873f97",
+      "path": "Configs/.local/share/hypr/lua/animations/optimized.lua",
+      "url": "https://raw.githubusercontent.com/HyDE-Project/HyDE/fa2fd57afc7203b1b5653d3271f3a57ea3873f97/Configs/.local/share/hypr/lua/animations/optimized.lua",
+      "sha256": "8bb679b356d0b1d3e7ff49015d9481e9a03743803f6d266b15de61b4bf72ef03"
+    },
+    {
+      "file": "hyde-end4.lua",
+      "repository": "HyDE-Project/HyDE",
+      "revision": "fa2fd57afc7203b1b5653d3271f3a57ea3873f97",
+      "path": "Configs/.local/share/hypr/lua/animations/end4.lua",
+      "url": "https://raw.githubusercontent.com/HyDE-Project/HyDE/fa2fd57afc7203b1b5653d3271f3a57ea3873f97/Configs/.local/share/hypr/lua/animations/end4.lua",
+      "sha256": "443261fff558d1474cf7dab5b5f9e8ab40ff55557a59dc197717ce72ad1976bf"
+    },
+    {
+      "file": "hyde-macos.lua",
+      "repository": "HyDE-Project/HyDE",
+      "revision": "fa2fd57afc7203b1b5653d3271f3a57ea3873f97",
+      "path": "Configs/.local/share/hypr/lua/animations/macos.lua",
+      "url": "https://raw.githubusercontent.com/HyDE-Project/HyDE/fa2fd57afc7203b1b5653d3271f3a57ea3873f97/Configs/.local/share/hypr/lua/animations/macos.lua",
+      "sha256": "c155255db72f749af1fbf1d5abdffa1de49a15886e704794f443dc0a7cf4967f"
+    },
+    {
+      "file": "hyprmod-bezier_presets.py",
+      "repository": "BlueManCZ/hyprmod",
+      "revision": "b475087af485bf53b33c4529ed616a220b512649",
+      "path": "hyprmod/data/bezier_presets.py",
+      "url": "https://raw.githubusercontent.com/BlueManCZ/hyprmod/b475087af485bf53b33c4529ed616a220b512649/hyprmod/data/bezier_presets.py",
+      "sha256": "b26b20bbe93e0df21f3118522b6be4adf688110d1bd051534460a8ab07b69cda"
+    },
+    {
+      "file": "ml4w-animations-dynamic.lua",
+      "repository": "mylinuxforwork/dotfiles",
+      "revision": "9ead14e78a9bff5f1ae7df3aec7a775730cf4431",
+      "path": "dotfiles/.config/hypr/conf/animations/animations-dynamic.lua",
+      "url": "https://raw.githubusercontent.com/mylinuxforwork/dotfiles/9ead14e78a9bff5f1ae7df3aec7a775730cf4431/dotfiles/.config/hypr/conf/animations/animations-dynamic.lua",
+      "sha256": "464176b2d800da9f952748b2012bc4f2b594f50ef9a5d39c728de71d4e1083f1"
+    },
+    {
+      "file": "ml4w-default.lua",
+      "repository": "mylinuxforwork/dotfiles",
+      "revision": "9ead14e78a9bff5f1ae7df3aec7a775730cf4431",
+      "path": "dotfiles/.config/hypr/conf/animations/default.lua",
+      "url": "https://raw.githubusercontent.com/mylinuxforwork/dotfiles/9ead14e78a9bff5f1ae7df3aec7a775730cf4431/dotfiles/.config/hypr/conf/animations/default.lua",
+      "sha256": "3ae00711a89ea404c27b54de35063561e559800aaf356d1fa663dde6c69c6085"
+    },
+    {
+      "file": "hyprland-LICENSE",
+      "repository": "hyprwm/Hyprland",
+      "revision": "988b94362e2700b4b07cb7247d81a86bf065b1fe",
+      "path": "LICENSE",
+      "url": "https://raw.githubusercontent.com/hyprwm/Hyprland/988b94362e2700b4b07cb7247d81a86bf065b1fe/LICENSE",
+      "sha256": "e01df754903af0ab26babb317b5f5a62dd95f770b733c5275414dd3245d00ae7"
+    },
+    {
+      "file": "hyde-LICENSE",
+      "repository": "HyDE-Project/HyDE",
+      "revision": "fa2fd57afc7203b1b5653d3271f3a57ea3873f97",
+      "path": "LICENSE",
+      "url": "https://raw.githubusercontent.com/HyDE-Project/HyDE/fa2fd57afc7203b1b5653d3271f3a57ea3873f97/LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "file": "hyprmod-LICENSE",
+      "repository": "BlueManCZ/hyprmod",
+      "revision": "b475087af485bf53b33c4529ed616a220b512649",
+      "path": "LICENSE",
+      "url": "https://raw.githubusercontent.com/BlueManCZ/hyprmod/b475087af485bf53b33c4529ed616a220b512649/LICENSE",
+      "sha256": "a9135462e4136c4072e5eb834b79a925c21ccbbd662c07602e14e4767333afa0"
+    },
+    {
+      "file": "ml4w-LICENSE",
+      "repository": "mylinuxforwork/dotfiles",
+      "revision": "9ead14e78a9bff5f1ae7df3aec7a775730cf4431",
+      "path": "LICENSE",
+      "url": "https://raw.githubusercontent.com/mylinuxforwork/dotfiles/9ead14e78a9bff5f1ae7df3aec7a775730cf4431/LICENSE",
+      "sha256": "b98fbb37db5b23bc5cfdcd16793206a5a7120a7b01f75374e5e0888376e4691c"
+    }
+  ]
+}

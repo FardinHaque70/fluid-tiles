@@ -3,6 +3,8 @@
 #include "core.h"
 #include "settings.h"
 #include "appearance.h"
+#include "animation.h"
+#include <effect/effectwindow.h>
 #include <QFileSystemWatcher>
 #include <effect/offscreeneffect.h>
 #include <input.h>
@@ -44,7 +46,14 @@ private:
         QPointer<KWin::EffectWindow> effect;
         QString id, group, insertNear;
         QRectF restore, target, lastRequest;
-        Fluid::Motion motion;
+        Fluid::AnimationMotion motion;
+        Fluid::ScalarAnimation opacity;
+        Fluid::AnimationEvent phase=Fluid::AnimationEvent::Rearrange;
+        Fluid::Appearance::SnapshotStyle lastStyle;
+        QRectF lastWorkArea;
+        QString outputName;
+        double outputScale=1;
+        qint64 animationStarted=0;
         bool captureDirty = true;
         quint64 snapshotRevision = 0;
         QRectF snapshotBounds;
@@ -73,8 +82,26 @@ private:
         std::vector<double> paintIntervals, presentationIntervals;
         qint64 lastPaint = 0, lastPresentation = 0;
         quint64 paints = 0;
+        quint64 missedRefreshes = 0;
+    };
+    struct ClosingVisual {
+        QPointer<KWin::EffectWindow> effect;
+        std::unique_ptr<KWin::EffectWindowDeletedRef> lifetime;
+        Fluid::AnimationMotion motion;
+        Fluid::ScalarAnimation opacity;
+        QString outputName;
+        double scale=1;
+        bool captureDirty=true;
+        qint64 started=0;
     };
     std::map<QString, State> m_windows;
+    std::map<QString, std::unique_ptr<ClosingVisual>> m_closing;
+    Fluid::AnimationSettings m_animationSettings;
+    std::array<Fluid::AnimationProfile,5> m_animationProfiles;
+    bool m_animationSettingsLoaded=false;
+    std::optional<Fluid::AnimationSettings> m_pendingAnimationSettings;
+    std::vector<double> m_settlingTimes;
+    quint64 m_closedAnimations=0,m_textureCaptures=0;
     std::map<QString, Fluid::Tree> m_trees;
     std::map<QString, Metrics> m_metrics;
     QSet<QString> m_floating, m_pendingPairChecks;
@@ -111,6 +138,13 @@ private:
     void restoreAll();
     void floatToCenter(State &);
     void cancelFloatingTransition(State &);
+    void configureMotion(State &,Fluid::AnimationEvent);
+    const Fluid::AnimationProfile &animationProfile(Fluid::AnimationEvent event) const {return m_animationProfiles[size_t(event)];}
+    void applyAnimationSettings(const Fluid::AnimationSettings &);
+    bool beginClosing(State &);
+    void finishClosing(const QString &);
+    void clearClosing();
+    void releaseGrab(KWin::EffectWindow *,int role);
     void syncLayers();
     void restoreLayer(State &);
     void flushGeometry();

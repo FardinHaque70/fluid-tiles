@@ -16,7 +16,7 @@ The settings window itself is excluded from tiling. Opening, saving, cancelling 
 |---|---|---|
 | Gap between windows | 10 px | Inner gap, 0–80 desktop pixels, with display scaling applied. |
 | Gap around the layout | 10 px | Outer gap, 0–80 desktop pixels, with display scaling applied. |
-| Animation responsiveness | 24 | Range 8–60. Higher values settle faster; KDE's global animation speed remains effective. |
+| Animation preset | Fluid | Dedicated Animations tab; opening, closing, rearrangement, drop and floating profiles. |
 | Expand a single tiled window | On | A lone tile fills the usable desktop without outer gaps, outlines or rounded corners. Panels remain visible. A second tile restores configured spacing and appearance. Floating and ignored windows do not count as tiles. Native maximum-size limits can retain the ordinary inset tile. |
 | Application ID / class / instance | Krohnkite KDE presets | Ignore a window if either its application/class identifier or instance matches a pattern. |
 | Window title | Empty | Ignore matching titles; membership updates if a client changes its title. |
@@ -29,6 +29,44 @@ Popup/internal windows (including decoration tooltips), hidden windows, special 
 ## Appearance
 
 Version 0.5 adds three independently switchable sections in the Appearance tab: **Outlines** (width and automatic KDE or custom colors), **Rounded corners** (radius), and **Titlebar control** (hide on tiles or on tiled and floating windows). Turning a section off disables its fields and restores only that native feature; its saved values are retained. Shared appearance exclusions remain separate from tiling exclusions. Defaults hide supported tiled titlebars; floating windows keep their controls. Gap values retain visible empty space between outlines. See [appearance details and limits](appearance.md).
+
+## Animation editor
+
+Choose a preset in **Animations**, then try Open, Close, Rearrange, Drop, Resize,
+Float or Interrupt in the miniature scene. The preview shares the compositor's
+motion engine, changes no desktop windows, and stops when the tab is hidden.
+Speed ranges from 0.5× to 2×; KDE's global animation factor still applies to the
+compositor. Turning KDE animations off immediately settles all native tracks.
+
+The factory selection is **Fluid — default**, **Hyprland Example**, **HyDE Fast**,
+**HyDE Optimized**, **Popin Soft — HyDE / ML4W**, **HyDE macOS**, **ML4W Dynamic**,
+**Classic** and **Off**. Imported recipes are labeled **Adapted for Fluid Tiles**;
+Preset details identifies the source and differences. Exact recipes, revisions,
+credits, hashes and licenses ship in `contents/data/animations`.
+
+Expand **Event settings & curve editor** to edit each event. Opening and closing
+have independent opacity curves. Drop and floating can inherit rearrangement.
+Springs expose mass, stiffness, damping and bounce; Béziers expose duration,
+19 named standard easings plus the copied recipe curves, draggable handles and
+numeric coordinates. Arrow keys adjust a selected handle; Space switches handles.
+Spring duration comes from physics, while the speed slider scales both models.
+Pop size/origin and slide direction are shown only for applicable lifecycle styles.
+Classic delegates closing to KDE; custom closing profiles can also choose this.
+
+Factory presets are immutable. Editing creates a Custom draft; **Save As** stores
+it under a new name. Named presets can be renamed or deleted. **Reset event**
+removes that override, and **Reset animations** selects Fluid while preserving
+saved presets. Standard Defaults also retains saved presets. Apply saves the
+versioned document; Cancel or reload discards the draft. Saving animation settings
+alone does not cancel a held drag/resize; the new profile takes effect on release.
+
+The installer selects Fluid once and saves the old spring frequency in
+**Classic — previous settings**. The legacy `SpringFrequency` key remains for
+rollback compatibility but is no longer the motion control in the dialog.
+`AnimationSettingsVersion` prevents reimporting the legacy preference on later
+installs. Updates preserve the Scripts checkbox, current tiling state and login preference.
+Shortcuts, layout, appearance and exclusion choices are independent. Invalid animation documents fall back to Fluid and expose an error
+in the editor and runtime diagnostics.
 
 ## Ignore patterns
 
@@ -68,7 +106,7 @@ exclusions**, and retain it under **Ignored windows**. The two exclusion lists
 are independent. This is a saved preference; restoring appearance defaults
 restores the preset exclusion.
 
-The schema is `package/contents/config/main.xml`, with values in `kwinrc` under `[Script-fluidtiles-controller]`: `InnerGap`, `OuterGap`, `SpringFrequency`, `ExpandSingleWindow`, `IgnoreApplications`, `IgnoreTitles`, and `IgnoreRoles`. Use the dialog for multiline rules so KConfig handles their serialization.
+The schema is `package/contents/config/main.xml`, with values in `kwinrc` under `[Script-fluidtiles-controller]`: `InnerGap`, `OuterGap`, `AnimationSettings`, `ExpandSingleWindow`, `IgnoreApplications`, `IgnoreTitles`, and `IgnoreRoles`. Use the dialog for multiline rules so KConfig handles their serialization.
 
 The installer migrates the earlier shared appearance toggle and titlebar choice once into `OutlinesEnabled`, `RoundedCornersEnabled`, `TitlebarControlEnabled` and `TitlebarScope` (0 tiled, 1 tiled and floating). Existing independent choices win. A previously disabled master leaves all three off; Keep titlebars leaves titlebar control off.
 

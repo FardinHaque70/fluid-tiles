@@ -2,6 +2,7 @@
 // Exercise the packaged KCModule used by both settings entry points.
 #include "settings.h"
 #include "pickerrules.h"
+#include "animation.h"
 #include <QApplication>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
@@ -12,12 +13,18 @@
 #include <QTabWidget>
 #include <QPushButton>
 #include <QListView>
+#include <QListWidget>
+#include <QTimer>
 #include <QDialog>
 #include <QLabel>
 #include <QElapsedTimer>
 #include <QThread>
 #include <QPluginLoader>
 #include <QLineEdit>
+#include <QToolButton>
+#include <QInputDialog>
+#include <QSlider>
+#include <QKeyEvent>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDir>
@@ -70,6 +77,14 @@ int main(int argc,char **argv) {
             auto w=form->findChild<QGroupBox *>("kcfg_"+QString(key));require(w,"Missing independent appearance section");return w;
         };
         auto apply=[&](const QJsonObject &values) {
+            auto editor=form->findChild<QWidget *>("kcfg_AnimationSettings");require(editor,"Missing animation editor");
+            if(values.contains("AnimationSettings"))editor->setProperty("animationSettings",QString::fromUtf8(QJsonDocument(values["AnimationSettings"].toObject()).toJson(QJsonDocument::Compact)));
+            else if(values.contains("SpringFrequency")) {
+                // Historical suites deliberately select the old motion baseline.
+                Fluid::AnimationSettings animation;auto legacy=Fluid::AnimationSettings::legacyPreset(values["SpringFrequency"].toDouble());
+                animation.document["customPresets"]=QJsonArray{legacy};animation.select("classic-previous");
+                editor->setProperty("animationSettings",animation.serialized());
+            }
             if (values.contains("ExpandSingleWindow")) form->findChild<QCheckBox *>("kcfg_ExpandSingleWindow")->setChecked(values.value("ExpandSingleWindow").toBool());
             for (auto key : {"InnerGap","OuterGap","SpringFrequency","BorderWidth","CornerRadius"}) if (values.contains(key))
                 spin(qPrintable("kcfg_"+QString(key)))->setValue(values.value(key).toDouble());
@@ -92,6 +107,43 @@ int main(int argc,char **argv) {
             }
             QCoreApplication::processEvents();module->save();
         };
+        if(args.value(1)=="animations") {
+            auto editor=form->findChild<QWidget *>("kcfg_AnimationSettings");require(editor,"No animation settings property");
+            auto gallery=form->findChild<QListWidget *>("animationPresets");require(gallery && gallery->count()>=9,"Factory preset gallery missing");
+            const auto saved=editor->property("animationSettings").toString();
+            form->resize(780,1040);form->show();auto tabs=form->findChild<QTabWidget *>("tabs");tabs->setCurrentWidget(form->findChild<QWidget *>("animationsTab"));QCoreApplication::processEvents();
+            auto state=[&]{return Fluid::AnimationSettings::read(editor->property("animationSettings").toString());};
+            gallery->setCurrentRow(1);require(state().presetId()=="hyprland","Gallery does not change draft profile");
+            auto configGroup=KConfigGroup(config,"Script-fluidtiles-controller");require(configGroup.readEntry("AnimationSettings",QString{})==saved,"Selecting preset saved without Apply");
+            form->findChild<QToolButton *>("animationAdvanced")->setChecked(true);
+            auto type=form->findChild<QComboBox *>("animationCurveType");type->setCurrentIndex(1);
+            spin("animationX1")->setValue(.234);require(state().profile(Fluid::AnimationEvent::Open).curve.x1==.234,"Numeric curve edit missing");
+            auto canvas=form->findChild<QWidget *>("animationCurveCanvas");QKeyEvent arrow(QEvent::KeyPress,Qt::Key_Right,Qt::NoModifier);QCoreApplication::sendEvent(canvas,&arrow);
+            require(std::abs(state().profile(Fluid::AnimationEvent::Open).curve.x1-.244)<1e-6,"Keyboard curve edit missing");
+            auto prompt=[&](const char *button,const QString &text){QTimer::singleShot(0,[text]{auto dialog=qobject_cast<QInputDialog *>(QApplication::activeModalWidget());if(dialog){dialog->setTextValue(text);dialog->accept();}});form->findChild<QPushButton *>(button)->click();};
+            form->findChild<QCheckBox *>("animationsEnabled")->setChecked(false);
+            prompt("animationSaveAs","Regression custom");require(state().presetId().startsWith("user-"),"Save As did not select saved preset");
+            require(state().document["customPresets"].toArray().last().toObject()["profiles"].toObject()["open"].toObject()["enabled"].toBool(),"Saving while disabled erased event choices");
+            form->findChild<QCheckBox *>("animationsEnabled")->setChecked(true);
+            require(state().profile(Fluid::AnimationEvent::Open).enabled,"Master switch could not restore saved animation");
+            prompt("animationRename","Renamed custom");require(state().document["customPresets"].toArray().last().toObject()["name"]=="Renamed custom","Custom preset rename lost");
+            module->save();const auto committed=editor->property("animationSettings").toString();
+            form->findChild<QPushButton *>("animationDelete")->click();require(state().presetId()=="fluid","Delete did not leave a valid preset selected");
+            module->load();require(editor->property("animationSettings").toString()==committed,"Deleting an unsaved custom preset was not reversible");
+            gallery->setCurrentRow(0);module->load();require(editor->property("animationSettings").toString()==committed,"Reload failed to discard unsaved preset");
+            module->defaults();require(state().presetId()=="fluid" && !state().document["customPresets"].toArray().isEmpty(),"Defaults removed saved presets");
+            require(configGroup.readEntry("AnimationSettings",QString{})==committed,"Defaults wrote before Apply");
+            // Restore the other tabs after testing global Defaults. The editor
+            // regression must not silently save their temporary default values.
+            module->load();form->findChild<QPushButton *>("animationReset")->click();
+            auto preview=form->findChild<QWidget *>("animationPreview");form->findChild<QPushButton *>("previewOpen")->click();require(preview->property("running").toBool(),"Preview did not start");
+            tabs->setCurrentWidget(form->findChild<QWidget *>("layoutTab"));QCoreApplication::processEvents();require(!preview->property("running").toBool(),"Hidden preview timer still running");
+            tabs->setCurrentWidget(form->findChild<QWidget *>("animationsTab"));QCoreApplication::processEvents();
+            if(!args.value(2).isEmpty()){QDir images(args.value(2));form->grab().save(images.filePath("animation-editor.png"));form->findChild<QToolButton *>("animationAdvanced")->setChecked(false);QCoreApplication::processEvents();form->grab().save(images.filePath("animation-presets.png"));}
+            editor->setProperty("animationSettings",saved);module->save();
+            require(KConfigGroup(config,"Plugins").readEntry("fluidtiles-controllerEnabled",false)==wasEnabled,"Animation settings changed activation");
+            std::cout<<"Animation settings editor tests passed\n";return 0;
+        }
         if (args.value(1)=="picker") {
             auto wait=[&](auto predicate) {
                 QElapsedTimer timer;timer.start();

@@ -4,14 +4,14 @@ Dwindle tiling, smooth window transitions and integrated appearance for **KDE Pl
 
 Fluid Tiles combines a native KWin tiler with configurable outlines, rounded corners and titlebar control. It takes inspiration from Hyprland's tiling and motion, with Krohnkite as the KDE integration reference.
 
-**Version 0.5.4 · Experimental · GPL-3.0-or-later**
+**Version 0.6.0 · Experimental · GPL-3.0-or-later**
 
 ## Features
 
 - **Dynamic tiling:** a Dwindle tree with focus-based insertion, drag-to-swap and edge insertion. Automatic two-window layouts prefer side-by-side columns when application size limits allow.
 - **Single-window mode:** enabled by default, a lone tile fills the desktop while keeping panels visible. Configured gaps, outlines and rounding return when a second tile opens.
 - **Responsive resizing:** drag a divider or use Meta + right-drag to adjust splits. A single tile can resize freely while held, then animate back on release.
-- **Continuous motion:** interruptible spring animations for layout changes, centered entrances for new windows and animated centering when toggling a tile to floating.
+- **Tunable motion:** interruptible spring and Bézier animation profiles for opening, closing, rearrangement, drop settling and floating transitions. Nine built-in presets, a visual curve editor and a miniature tiling preview make tuning interactive.
 - **Integrated appearance:** independently configurable outlines, rounded corners and supported titlebar hiding, with KDE theme colors or custom active/inactive colors.
 - **Window rules:** configurable gaps and application, title and role exclusions, with a searchable window picker for adding rules. Appearance exclusions are separate from tiling exclusions; ordinary floating windows stay above tiles.
 - **Restoration:** disabling Fluid Tiles restores the window geometry, decoration and layer state it owns.
@@ -36,7 +36,7 @@ python3 tools/control.py install
 python3 tools/control.py start
 ```
 
-Installation is user-local and requires no administrator privileges. `install` leaves Fluid Tiles disabled; `start` enables it now and at subsequent logins. The package is installed under `~/.local/share/kwin/scripts/fluidtiles-controller`.
+Installation is user-local and requires no administrator privileges. A first `install` leaves Fluid Tiles disabled; updates preserve the current activation and login preference. `start` enables it now and at subsequent logins. The package is installed under `~/.local/share/kwin/scripts/fluidtiles-controller`.
 
 You can also enable or disable it in **System Settings → Window Management → KWin Scripts**.
 
@@ -63,7 +63,9 @@ Open **Fluid Tiles Settings** from the application launcher, or run:
 python3 tools/control.py configure
 ```
 
-Adjust gaps, animation responsiveness, **Expand a single tiled window**, ignored windows and the three independent appearance sections: **Outlines**, **Rounded corners** and **Titlebar control**. Changes apply live; the settings dialog also works while tiling is disabled. Application-drawn headers remain application-controlled.
+Adjust gaps, animation presets and event profiles, **Expand a single tiled window**, ignored windows and the three independent appearance sections: **Outlines**, **Rounded corners** and **Titlebar control**. Changes apply live; the settings dialog also works while tiling is disabled. Application-drawn headers remain application-controlled.
+
+The **Animations** tab includes Fluid, copied Hyprland/HyDE/ML4W profiles, Classic and Off. Edit curves, spring physics, opacity and entrance style; save your own named presets. Unsaved previews stay inside the dialog until Apply.
 
 See [settings and window rules](docs/settings.md) and [appearance behavior](docs/appearance.md).
 
@@ -95,6 +97,6 @@ See the [validation record](VALIDATION.md), [behavior audit](docs/behavior-audit
 
 [Hyprland](https://github.com/hyprwm/Hyprland) provides the behavioral reference; [Krohnkite](https://github.com/beefsack/Krohnkite) informs KDE integration and exclusion defaults. Fluid Tiles' tiler is a native KWin implementation.
 
-Upstream animation reference configurations are retained with their original licenses and a [source manifest](package/contents/data/animations/upstream/manifest.json). They are reference data; the current release uses the spring animations described above.
+Upstream animation reference configurations are retained with their original licenses and a [source manifest](package/contents/data/animations/upstream/manifest.json). The catalog copies their window animation recipes, with documented KWin adaptations. HyprMod supplies the 19 named easing curves. See the packaged [credits, notices and mapping](package/contents/data/animations/ADAPTATIONS.md).
 
 Licensed under the [GNU General Public License, version 3 or later](LICENSE).

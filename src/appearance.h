@@ -25,6 +25,12 @@ struct PresentationGeometry : BorderGeometry {
 class Appearance final : public QObject {
     Q_OBJECT
 public:
+    struct SnapshotStyle {
+        double border=0, opacity=1;
+        KWin::BorderRadius radius;
+        QColor color;
+        bool rounded=false;
+    };
     explicit Appearance(QObject *parent=nullptr);
     ~Appearance() override;
     bool configure(const KConfigGroup &); // true for geometry-affecting changes
@@ -41,6 +47,8 @@ public:
     void cancelPendingFrame(KWin::EffectWindow *);
     void restoreAll();
     void focusChanged();
+    SnapshotStyle snapshot(KWin::EffectWindow *,const QRectF &) const;
+    void freeze(KWin::EffectWindow *,const SnapshotStyle &);
     void damage(KWin::EffectWindow *, const QRectF &visual);
     PresentationGeometry geometry(KWin::EffectWindow *, const QRectF &visual) const;
     bool prepareShader();
@@ -68,6 +76,8 @@ private:
         QRectF lastOuter, pendingFrame;
         bool framePending=false;
         bool expanded=false;
+        bool closing=false;
+        SnapshotStyle snapshot;
         std::unique_ptr<KWin::Item> boundsItem;
         std::unique_ptr<KWin::Item> outlineRoot;
         std::unique_ptr<KWin::OutlinedBorderItem> outline;

@@ -5,7 +5,7 @@
     "Name": "Fluid Tiles — Native Tiling (experimental)",
     "Description": "Dwindle tiling, direct split resizing and interruptible motion. Loads a native plugin built for this KWin version.",
     "License": "GPL-3.0-or-later",
-    "Version": "0.5.4",
+    "Version": "0.6.0",
     "EnabledByDefault": false
   },
   "X-KDE-ConfigModule": "kwin/effects/configs/kcm_fluidtiles",
