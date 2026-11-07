@@ -28,6 +28,15 @@ def run_animation_audit(api, env, children, log, results):
         wait_for(lambda:all(w['id']!=ident for w in status()['windows']))
         wait_for(settled);assert status()['animation']['closingVisuals']==0
     subprocess.run([str(root/'build/fluidtiles-settings-tests'),'animations',str(results)],env={**env,'QT_QPA_PLATFORM':'offscreen','FLUIDTILES_SETTINGS_TEST':'1'},check=True,stdout=log,stderr=log,timeout=20)
+    subprocess.run([str(root/'build/fluidtiles-settings'),str(results/'animation-dialog.png')],
+        env={**env,'FLUIDTILES_SETTINGS_TEST':'1','FLUIDTILES_SETTINGS_TAB':'animations','QT_STYLE_OVERRIDE':'Breeze'},
+        check=True,stdout=log,stderr=log,timeout=8)
+    report['compact_editor_roundtrip_and_fit']='passed'
+    for speed in [.1,.37,2]:
+        configure(speed=speed)
+        p,ident=spawn('Numeric speed '+str(speed));wait_for(settled)
+        close(p,ident)
+    report['numeric_speed_bounds_and_lifecycle']='passed'
     for preset in catalog['presets']:
         name=preset['id'];configure(name,speed=.5 if name=='fluid' else 1)
         p,ident=spawn('Animation '+name,80 if name=='fluid' else 0)

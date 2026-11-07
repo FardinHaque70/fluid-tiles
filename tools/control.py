@@ -104,21 +104,36 @@ def start_installed(*,enable_tiling=True):
     raise RuntimeError("Loader started but native effect did not appear; inspect journalctl --user for Fluid Tiles")
 
 def migrate_appearance_settings():
-    """Split the previous master control without changing effective choices."""
+    """Migrate section controls and correct the old factory Plasma exclusion."""
     missing="__fluidtiles_missing__"
     args=("--file","kwinrc","--group","Script-"+PLUGIN)
     def read(key,default=missing):
         return run("kreadconfig6",*args,"--key",key,"--default",default).stdout.strip()
-    if read("AppearanceSettingsVersion","0")!="0":return
-    enabled=read("AppearanceEnabled","true").lower() in ("true","1","yes","on")
-    mode=read("TitlebarMode","1")
-    values={"OutlinesEnabled":str(enabled).lower(),"RoundedCornersEnabled":str(enabled).lower(),
-        "TitlebarControlEnabled":str(enabled and mode!="0").lower(),"TitlebarScope":"1" if mode=="2" else "0"}
-    for key,value in values.items():
-        if read(key)==missing:run("kwriteconfig6",*args,"--key",key,value)
-    # Remove obsolete values so KDE's Defaults cannot later resurrect them.
-    for key in ("AppearanceEnabled","TitlebarMode"):run("kwriteconfig6",*args,"--key",key,"--delete")
-    run("kwriteconfig6",*args,"--key","AppearanceSettingsVersion","1")
+    version=read("AppearanceSettingsVersion","0")
+    if version=="0":
+        enabled=read("AppearanceEnabled","true").lower() in ("true","1","yes","on")
+        mode=read("TitlebarMode","1")
+        values={"OutlinesEnabled":str(enabled).lower(),"RoundedCornersEnabled":str(enabled).lower(),
+            "TitlebarControlEnabled":str(enabled and mode!="0").lower(),"TitlebarScope":"1" if mode=="2" else "0"}
+        for key,value in values.items():
+            if read(key)==missing:run("kwriteconfig6",*args,"--key",key,value)
+        # Remove obsolete values so KDE's Defaults cannot later resurrect them.
+        for key in ("AppearanceEnabled","TitlebarMode"):run("kwriteconfig6",*args,"--key",key,"--delete")
+    if version in ("0","1"):
+        # Correct only the old factory list. Explicit custom exclusions remain
+        # user-owned; a requested live fix can remove specific entries separately.
+        schema=ROOT/"package/contents/config/main.xml"
+        if not schema.exists():schema=ROOT/"build/package/contents/config/main.xml"
+        import xml.etree.ElementTree as ET
+        ns={"k":"http://www.kde.org/standards/kcfg/1.0"}
+        entry=ET.parse(schema).find(".//k:entry[@name='IgnoreApplications']/k:default",ns)
+        old_defaults=entry.text.splitlines()
+        current=read("AppearanceIgnoredApplications")
+        normalized=lambda lines:{line.strip().casefold() for line in lines if line.strip()}
+        if current!=missing and normalized(current.splitlines())==normalized(old_defaults):
+            updated='\n'.join(line for line in current.splitlines() if line.strip().casefold() not in ("plasmashell","org.kde.plasmashell"))
+            run("kwriteconfig6",*args,"--key","AppearanceIgnoredApplications",updated)
+        run("kwriteconfig6",*args,"--key","AppearanceSettingsVersion","2")
 
 def migrate_animation_settings():
     """Adopt Fluid once, retaining the previous spring as a recoverable preset."""

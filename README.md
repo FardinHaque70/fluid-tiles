@@ -4,14 +4,14 @@ Dwindle tiling, smooth window transitions and integrated appearance for **KDE Pl
 
 Fluid Tiles combines a native KWin tiler with configurable outlines, rounded corners and titlebar control. It takes inspiration from Hyprland's tiling and motion, with Krohnkite as the KDE integration reference.
 
-**Version 0.6.0 · Experimental · GPL-3.0-or-later**
+**Version 0.6.3 · Experimental · GPL-3.0-or-later**
 
 ## Features
 
 - **Dynamic tiling:** a Dwindle tree with focus-based insertion, drag-to-swap and edge insertion. Automatic two-window layouts prefer side-by-side columns when application size limits allow.
 - **Single-window mode:** enabled by default, a lone tile fills the desktop while keeping panels visible. Configured gaps, outlines and rounding return when a second tile opens.
 - **Responsive resizing:** drag a divider or use Meta + right-drag to adjust splits. A single tile can resize freely while held, then animate back on release.
-- **Tunable motion:** interruptible spring and Bézier animation profiles for opening, closing, rearrangement, drop settling and floating transitions. Nine built-in presets, a visual curve editor and a miniature tiling preview make tuning interactive.
+- **Tunable motion:** interruptible spring and Bézier animation profiles for opening, closing, rearrangement, drop settling and floating transitions. Default and Elastic presets and a compact visual curve editor keep tuning accessible.
 - **Integrated appearance:** independently configurable outlines, rounded corners and supported titlebar hiding, with KDE theme colors or custom active/inactive colors.
 - **Window rules:** configurable gaps and application, title and role exclusions, with a searchable window picker for adding rules. Appearance exclusions are separate from tiling exclusions; ordinary floating windows stay above tiles.
 - **Restoration:** disabling Fluid Tiles restores the window geometry, decoration and layer state it owns.
@@ -65,7 +65,7 @@ python3 tools/control.py configure
 
 Adjust gaps, animation presets and event profiles, **Expand a single tiled window**, ignored windows and the three independent appearance sections: **Outlines**, **Rounded corners** and **Titlebar control**. Changes apply live; the settings dialog also works while tiling is disabled. Application-drawn headers remain application-controlled.
 
-The **Animations** tab includes Fluid, copied Hyprland/HyDE/ML4W profiles, Classic and Off. Edit curves, spring physics, opacity and entrance style; save your own named presets. Unsaved previews stay inside the dialog until Apply.
+The **Animations** tab offers **Default** and **Elastic** (the copied Hyprland Example recipe). Adjust events and curves side by side, including spring physics, opacity and entrance style. Edits stay unsaved until Apply.
 
 See [settings and window rules](docs/settings.md) and [appearance behavior](docs/appearance.md).
 

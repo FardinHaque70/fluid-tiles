@@ -43,6 +43,9 @@ int main(int argc, char **argv) {
                        "org.kde.kruler","kruler","kwin_wayland","ksmserver-logout-greeter"})
             require(patterns.matches(id),"Krohnkite default application exclusion missing");
         require(!patterns.matches("org.kde.dolphin"),"ordinary Dolphin must not be ignored by default");
+        patterns.setText(Fluid::defaultAppearanceIgnoredApplications);
+        require(!patterns.matches("plasmashell") && !patterns.matches("org.kde.plasmashell"),"Plasma settings may receive appearance independently of tiling");
+        require(patterns.matches("krunner") && patterns.matches("org.kde.polkit-kde-authentication-agent-1"),"Unrelated appearance exclusions remain intact");
         patterns.setText(Fluid::defaultIgnoredRoles);
         require(patterns.matches("quake"),"Krohnkite default role exclusion missing");
         {

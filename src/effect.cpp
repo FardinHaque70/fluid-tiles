@@ -23,6 +23,9 @@
 #include <QStandardPaths>
 #include <QFileInfo>
 #include <core/renderviewport.h>
+#include <core/rendertarget.h>
+#include <opengl/glframebuffer.h>
+#include <epoxy/gl.h>
 
 using namespace KWin;
 Q_LOGGING_CATEGORY(fluidLog, "fluidtiles")
@@ -142,6 +145,8 @@ FluidTiles::FluidTiles() {
         shortcut("swap-"+directions[i], "Swap "+directions[i], QKeySequence("Meta+Shift+"+keys[i]));
     }
     scheduleReconcile();
+    // Run after the native loader has finished inserting this effect.
+    QTimer::singleShot(0,this,[this] {syncDesktopAnimations(m_enabled);});
     qCInfo(fluidLog) << "Loaded native prototype; enabled:" << m_enabled << "test mode:" << m_test;
 }
 FluidTiles::~FluidTiles() {
@@ -152,8 +157,12 @@ FluidTiles::~FluidTiles() {
     restoreAll();
     effects->makeOpenGLContextCurrent();
     m_appearance.reset();
+    syncDesktopAnimations(false);
 }
 void FluidTiles::reconfigure(ReconfigureFlags) {
+    // KDE Desktop Effects Apply may try to re-enable a competing effect.
+    // Defer unloading until KWin's configuration callback has returned.
+    QTimer::singleShot(0,this,[this] {if(m_enabled)syncDesktopAnimations(true);});
     KConfigGroup config(effects->config(), "Script-fluidtiles-controller");
     const double gap=std::clamp(config.readEntry("InnerGap",10.0),0.0,80.0);
     const double outer=std::clamp(config.readEntry("OuterGap",10.0),0.0,80.0);
@@ -210,6 +219,9 @@ bool FluidTiles::beginClosing(State &s) {
     if(!w || !m_enabled || !s.tiled || p.style=="system" || w->skipsCloseAnimation()
         || !w->isOnCurrentDesktop() || !w->isOnCurrentActivity() || effects->activeFullScreenEffect()
         || effects->isScreenLocked() || (w->data(WindowClosedGrabRole).isValid() && w->data(WindowClosedGrabRole).value<void *>()!=this))return false;
+    if(m_test && qEnvironmentVariableIntValue("FLUIDTILES_TEST_CLOSE_FRAMES")==1) {
+        m_testCloseFrames=QJsonArray{};m_testCloseTracking=true;m_testCloseEndFrames=0;
+    }
     w->setData(WindowClosedGrabRole,QVariant::fromValue(static_cast<void *>(this)));
     if(!p.enabled || effects->animationTimeFactor()==0) {
         QPointer<EffectWindow> guarded=w;
@@ -242,7 +254,7 @@ void FluidTiles::finishClosing(const QString &id) {
     // Drop the deleted reference last, after removal from every bookkeeping map.
 }
 void FluidTiles::clearClosing() {while(!m_closing.empty())finishClosing(m_closing.begin()->first);}
-bool FluidTiles::isActive() const { return m_enabled && (!m_windows.empty() || !m_closing.empty()); }
+bool FluidTiles::isActive() const { return m_enabled && (!m_windows.empty() || !m_closing.empty() || (m_test && m_testCloseTracking)); }
 void FluidTiles::scheduleReconcile() { if (!m_reconcile.isActive()) m_reconcile.start(0); }
 void FluidTiles::watchOutput(LogicalOutput *o) {
     connect(o, &LogicalOutput::geometryChanged, this, &FluidTiles::scheduleReconcile);
@@ -794,8 +806,10 @@ void FluidTiles::prePaintScreen(ScreenPrePaintData &data) {
         const double elapsed=dt*m_animationSettings.speed()/std::max(.01,effects->animationTimeFactor());
         g->motion.step(elapsed,g->scale);g->opacity.step(elapsed);
         effects->addRepaint(RectF(previous.united(g->motion.rect()).adjusted(-64,-64,64,64)));
-        if(!g->motion.moving() && !g->opacity.moving())finished.push_back(id);
-        else moving=true;
+        // Keep a naturally finished visual in the paint chain at its final
+        // opacity until this frame is complete. Removing it here exposes the
+        // retained native window without our opacity transform for one frame.
+        if(g->motion.moving() || g->opacity.moving())moving=true;
     }
     for(const auto &id:finished)finishClosing(id);
     m_animating = moving || m_drag.has_value();
@@ -890,8 +904,30 @@ bool FluidTiles::drawWindow(const RenderTarget &target,const RenderViewport &vie
 bool FluidTiles::blocksDirectScanout() const {
     return OffscreenEffect::blocksDirectScanout() || m_appearance->needsCompositing();
 }
+bool FluidTiles::paintScreen(const RenderTarget &target,const RenderViewport &viewport,int mask,
+                             const Region &region,LogicalOutput *screen) {
+    const bool result=effects->paintScreen(target,viewport,mask,region,screen);
+    // Test-only endpoint pixels, sampled from every actual paint rather than
+    // occasional screenshots that can miss a single-frame flash.
+    if(m_testCloseTracking && target.framebuffer() && m_testCloseFrames.size()<512) {
+        unsigned char pixel[4]{};
+        GLFramebuffer::pushFramebuffer(target.framebuffer());
+        const auto size=target.size();
+        glReadPixels(size.width()/2,size.height()/2,1,1,GL_RGBA,GL_UNSIGNED_BYTE,pixel);
+        GLFramebuffer::popFramebuffer();
+        m_testCloseFrames.append(QJsonObject{{"closing",int(m_closing.size())},
+            {"rgb",QJsonArray{int(pixel[0]),int(pixel[1]),int(pixel[2])}}});
+        if(m_closing.empty() && ++m_testCloseEndFrames>=3)m_testCloseTracking=false;
+        else effects->addRepaintFull();
+    }
+    return result;
+}
 void FluidTiles::postPaintScreen() {
     effects->postPaintScreen();
+    std::vector<QString> completed;
+    for(const auto &[id,g]:m_closing)
+        if(!g->motion.moving() && !g->opacity.moving())completed.push_back(id);
+    for(const auto &id:completed)finishClosing(id);
     if (m_animating) {
         for(const auto &[id,s]:m_windows)if((s.tiled || s.floatingTransition) && s.effect && (s.motion.moving() || s.opacity.moving() || m_drag))
             effects->addRepaint(RectF(presentation(s).united(s.effect->expandedGeometry()).adjusted(-64,-64,64,64)));
@@ -1130,6 +1166,44 @@ QString FluidTiles::neighbour(const State &s, int direction) const {
     }
     return result;
 }
+void FluidTiles::syncDesktopAnimations(bool active) {
+    const QStringList names{QStringLiteral("scale"),QStringLiteral("fade")};
+    KConfigGroup saved(effects->config(),"FluidTiles-DesktopAnimations");
+    KConfigGroup plugins(effects->config(),"Plugins");
+    if(active) {
+        if(!saved.readEntry("Active",false)) {
+            for(const auto &name:names) {
+                const auto key=name+"Enabled";
+                saved.writeEntry(name+"Present",plugins.hasKey(key));
+                saved.writeEntry(name+"Enabled",plugins.readEntry(key,name=="scale"));
+                saved.writeEntry(name+"Loaded",effects->isEffectLoaded(name));
+            }
+            saved.writeEntry("Active",true);saved.sync();
+        }
+        for(const auto &name:names) {
+            const auto key=name+"Enabled";
+            if(!plugins.hasKey(key) || plugins.readEntry(key,true))plugins.writeEntry(key,false);
+        }
+        plugins.sync();
+        for(const auto &name:names)if(effects->isEffectLoaded(name))effects->unloadEffect(name);
+    } else if(saved.readEntry("Active",false)) {
+        QStringList reload;
+        for(const auto &name:names) {
+            const auto key=name+"Enabled";
+            if(saved.readEntry(name+"Present",false))plugins.writeEntry(key,saved.readEntry(name+"Enabled",true));
+            else plugins.deleteEntry(key);
+            if(saved.readEntry(name+"Loaded",false) || saved.readEntry(name+"Enabled",name=="scale"))reload.append(name);
+        }
+        plugins.sync();saved.deleteGroup();saved.sync();
+        // The effect may be in its destructor. Reload through KWin's own
+        // lifetime, after unloading Fluid Tiles has completed.
+        QPointer<EffectsHandler> handler=effects;
+        QTimer::singleShot(0,effects,[handler,reload] {
+            if(!handler || KConfigGroup(handler->config(),"FluidTiles-DesktopAnimations").readEntry("Active",false))return;
+            for(const auto &name:reload)if(!handler->isEffectLoaded(name))handler->loadEffect(name);
+        });
+    }
+}
 bool FluidTiles::SetEnabled(bool enabled) {
     if (effects->isScreenLocked()) return false;
     if (m_enabled == enabled) return true;
@@ -1138,6 +1212,7 @@ bool FluidTiles::SetEnabled(bool enabled) {
     KConfigGroup config(effects->config(), "Effect-fluidtiles");
     config.writeEntry("TilingEnabled",enabled); config.sync();
     if (!enabled) restoreAll(); else { m_lastStep = m_clock.nsecsElapsed(); scheduleReconcile(); }
+    syncDesktopAnimations(enabled);
     return true;
 }
 bool FluidTiles::Action(const QString &name) {
@@ -1203,7 +1278,8 @@ bool FluidTiles::TestWindow(const QString &id, const QString &operation) {
     auto it=m_windows.find(id);
     if (it==m_windows.end() || !it->second.effect || !it->second.effect->window()) return false;
     auto c=it->second.effect->window();
-    if (operation=="minimize") c->setMinimized(true);
+    if (operation=="close") c->closeWindow();
+    else if (operation=="minimize") c->setMinimized(true);
     else if (operation=="restore") c->setMinimized(false);
     else if (operation=="fullscreen") c->setFullScreen(true);
     else if (operation=="unfullscreen") c->setFullScreen(false);
@@ -1279,14 +1355,14 @@ QString FluidTiles::Status() const {
     for (auto o : effects->screens()) outputs.append(QJsonObject{{"name", o->name()}, {"scale", o->scale()}, {"refresh_millihz", int(o->refreshRate())}, {"geometry", jsonRect(o->geometryF())}});
     QJsonObject metrics;
     for (const auto &[name,m] : m_metrics) metrics[name] = QJsonObject{{"paint", distribution(m.paintIntervals)}, {"presentation", distribution(m.presentationIntervals)}, {"paint_frames", qint64(m.paints)},{"missedRefreshEstimate",qint64(m.missedRefreshes)}};
-    return QString::fromUtf8(QJsonDocument(QJsonObject{{"version", "0.6.0"}, {"enabled", m_enabled}, {"dragging", m_drag.has_value()}, {"nativeDrag", m_drag && m_drag->nativeMove},
+    return QString::fromUtf8(QJsonDocument(QJsonObject{{"version", "0.6.3"}, {"enabled", m_enabled}, {"dragging", m_drag.has_value()}, {"nativeDrag", m_drag && m_drag->nativeMove},
         {"activeWindow",effects->activeWindow()?idOf(effects->activeWindow()):QString{}},
         {"fullScreenEffect",effects->activeFullScreenEffect()?QString::fromLatin1(effects->activeFullScreenEffect()->metaObject()->className()):QString{}},
         {"libraryPath",QString::fromLocal8Bit(library.dli_fname?library.dli_fname:"")},
         {"nativeResize",m_drag && m_drag->nativeResize}, {"freeResize",m_drag && m_drag->freeResize}, {"animating", m_animating}, {"innerGap", m_gap}, {"outerGap",m_outerGap},
         {"ignoreRules",QJsonObject{{"applications",m_ignoreApplicationText},{"titles",m_ignoreTitleText},{"roles",m_ignoreRoleText}}},
         {"expandSingleWindow",m_expandSingleWindow}, {"springFrequency",m_omega}, {"animationTimeFactor",effects->animationTimeFactor()}, {"animation",QJsonObject{{"settings",m_animationSettings.document},{"profiles",m_animationSettings.profiles()},{"error",m_animationSettings.error},{"pending",m_pendingAnimationSettings.has_value()},
-            {"closing",closing},{"closingVisuals",int(m_closing.size())},{"completedCloses",qint64(m_closedAnimations)},{"textureCaptures",qint64(m_textureCaptures)},{"settling",distribution(m_settlingTimes)}}},
+            {"testCloseFrames",m_testCloseFrames},{"closing",closing},{"closingVisuals",int(m_closing.size())},{"completedCloses",qint64(m_closedAnimations)},{"textureCaptures",qint64(m_textureCaptures)},{"settling",distribution(m_settlingTimes)}}},
         {"appearance",m_appearance->status()}, {"testMode", m_test}, {"outputs", outputs}, {"windows", windows}, {"metrics", metrics}}).toJson(QJsonDocument::Compact));
 }
 

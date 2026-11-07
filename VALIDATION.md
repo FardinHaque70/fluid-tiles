@@ -1,5 +1,124 @@
 # Fluid Tiles validation
 
+## 0.6.3 Scale/Fade ownership switch (2026-11-07)
+
+Fluid Tiles now explicitly disables KDE Scale/Fade in the Plugins settings and
+unloads them while tiling is enabled. It restores the previous enabled/disabled
+or implicit-default choices on emergency disable and script/native unload.
+Seven focused disposable-KWin checks pass, covering activation, Desktop Effects
+Apply, emergency disable, unload, mixed/off preferences, disabled-controller load
+and unchanged animation settings. All five CTest targets pass. The per-frame
+closing-flash regression also passes with this ownership switch active.
+
+Installed and verified live as 0.6.3: Scale was previously loaded and Fade was
+not; both are now unloaded, and both Plugins settings are false. Only those
+settings and the saved-state ownership group changed. Animation settings,
+shortcuts, KDE globals and unrelated preferences are retained.
+Evidence: `test-results/effect-ownership/effect-ownership.json`,
+`test-results/effect-ownership-flash/closing-flash.json`, and
+`test-results/effect-ownership-live/verified.json`.
+
+
+## 0.6.2 closing-flash fix (2026-11-07)
+
+Confirmed with a per-painted-frame real Dolphin regression: the pre-fix path
+returns from fully faded background to full-opacity white for one frame when
+`prePaintScreen` removes its closing record. Normal completion now releases the
+record in `postPaintScreen`, after the final zero-opacity paint. The identical
+regression passes after the change, including three post-close frames. All five
+CTest targets pass. No rendering-path optimization or animation timing change
+is included. The test pixel readback/repaints are guarded by disposable test mode.
+
+Before/after evidence: `test-results/closing-flash-{before,after}/closing-flash.json`.
+Installed live as 0.6.2; `kwinrc`, `kglobalshortcutsrc`, and `kdeglobals` remain
+byte-for-byte unchanged. Evidence: `test-results/closing-flash-live/verified.json`.
+
+
+## Numeric animation speed (2026-11-07)
+
+The animation speed slider is replaced by an editable decimal field spanning
+0.1×–2×, with two decimal places. Saved settings and archived custom presets
+accept the same range.
+
+- Build and all five CTest targets pass, including speed round-trip and invalid
+  range coverage. The real KCModule verifies typed 0.1, 0.37 and 2 values,
+  Apply/reload persistence and input bounds; the captured dialog was inspected.
+- The full disposable KWin animation suite passes at 145%, including opening,
+  settling and closing at all three numeric values. Report:
+  `test-results/numeric-speed/animations.json`.
+- Subsequently installed and verified live at the user's request as 0.6.2.
+  Immediately after installation, `kwinrc`, `kdeglobals` and shortcuts remained
+  byte-for-byte unchanged; tiling and autostart remained enabled. The loaded
+  native path/hash and settings module match the tested package. A read-only
+  settings-dialog check passed. Installation backups and temporary verification
+  files were removed at the user's request.
+
+## Version 0.6.1 Plasma rounded-corner fix (2026-11-06)
+
+Appearance defaults are now separate from tiling exclusions. Ordinary Plasma
+settings windows and dialogs may receive rounding/outlines. Existing structural
+guards continue excluding panels, desktops, layer-shell surfaces and popups.
+The installer migrates unchanged legacy factory appearance lists once; explicit
+custom exclusions remain intact. The authorized live update removes only the
+two Plasma entries from this user's customized appearance list.
+
+- All five CTest targets pass, including separate native/schema default checks
+  and ten legacy/default/custom migration scenarios. Build and Python syntax/
+  diff checks pass.
+- Focused disposable KWin regressions pass at **100%, 145% and 200%**. They cover
+  ordinary settings, a true parent/modal dialog pair, both Plasma application
+  identifiers, rounding independent of outlines, floating geometry/titlebar
+  preservation, explicit exclusions, disable/restore and re-enable. Actual panel
+  and background desktop layer surfaces remain unstyled with all application
+  exclusions cleared. Captures were inspected at 145%.
+- All **28 existing appearance regression groups** pass at 145%, including actual
+  corner pixels, popups, native-state transitions and unload cleanup.
+- Installed and independently verified live as **0.6.1**, active and autoloaded.
+  Only `AppearanceIgnoredApplications` and `AppearanceSettingsVersion` changed
+  in `kwinrc`; animation settings, radius, colors, gaps, tiling exclusions,
+  activation, KDE settings and shortcut bindings are retained. No host input was
+  injected. The two originally reported dialogs had closed by verification;
+  their identities are covered by the disposable fixtures.
+
+Reports: `test-results/plasma-corners-{100,145,200}/plasma-appearance.json`,
+`test-results/plasma-corners-appearance/appearance.json`, and
+`test-results/plasma-corners-live/verified.json`.
+
+Native SHA-256:
+`5d5f381936762c57318bd825f185f7b36a814906de0b43f669fb0931b290a0df`.
+
+## Compact animation settings (2026-11-06)
+
+The settings UI now exposes only **Default** and **Elastic** (the unchanged
+Hyprland Example recipe). The tiling preview and its action buttons/timer are
+removed. A compact selector replaces the gallery; Event and Curve panels sit
+side by side, with spring physics on one row and compact Bézier timing/coordinates.
+The standalone window defaults to 780×640. Older recipe references and custom
+preset documents remain readable without adding entries to the selector.
+
+- The actual KCModule verifies exactly two preset choices, no preview, keyboard
+  and numeric curve editing, Apply/reload/Cancel/Defaults, archived preset
+  preservation, master toggle behavior and unchanged activation. Both curve types,
+  every event and both opacity tracks fit a 740×540 form without scrolling in
+  generic and KDE Breeze styles. Captures were inspected.
+- CTest passes all four targets; build, Python syntax and diff checks pass.
+  The disposable KWin animation/lifecycle suite passes at 145%, including the
+  actual 780×640 standalone dialog capture. Report:
+  `test-results/compact-animations-repeat/animations.json`.
+- The first broader run timed out on the unchanged native binary's `animating`
+  status flag with zero windows and zero closing visuals after Off. The repeat
+  passes the full suite, including idle checks. Evidence of this intermittent
+  diagnostic issue remains in `test-results/compact-animations-native/`; the
+  compositor was not changed as part of this settings simplification.
+- Installed only the settings module and launcher, without unloading the running
+  tiler. Live `kwinrc`, shortcuts and `kdeglobals` remain byte-for-byte unchanged;
+  activation and the selected Hyprland/Elastic recipe remain intact. The actual
+  loaded tiler path/hash is unchanged. Read-only module-load smoke passed.
+  Evidence: `test-results/compact-animations-live/verified.json`.
+
+Settings module SHA-256:
+`4466554e745b23357eb2e147327bc229ad5c017ff98b809f2f95f854d2615432`.
+
 ## Version 0.6.0 animation overhaul
 
 Validated 2026-11-05.
@@ -59,8 +178,15 @@ python3 tests/integration.py
 
 Use short session paths: Wayland's Unix socket path must fit its 108-byte limit.
 All native testing uses the private `fluidtiles-test` socket and disposable
-D-Bus/config/runtime roots. No host input injection, live package installation,
-or host activation/preference changes were performed for this release.
+D-Bus/config/runtime roots. No host input injection or host activation/preference changes were performed
+during the disposable regression runs. After those passed, the user explicitly
+requested the live update: 0.6.0 was installed and independently verified on
+2026-11-05 with the same tested native/settings hashes. Activation/autoload stayed
+enabled; 5 px gaps, appearance, exclusions, KDE animation factor and shortcuts
+were preserved. Only AnimationSettings and AnimationSettingsVersion changed;
+responsiveness 12 is archived as Classic — previous settings. Evidence:
+`test-results/live-060/verified.json`. The settings window was opened for manual
+trial. This installation check does not establish physical 144 Hz smoothness.
 
 Physical 144 Hz motion, mixed-output/hotplug and real Activity-service behavior
 remain broader validation. In particular, the earlier application-specific

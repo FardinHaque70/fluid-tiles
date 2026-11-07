@@ -43,7 +43,7 @@ are not embedded.
 Upstream window movement styles select opening/closing geometry; they do not
 add pop/slide motion to arbitrary rearrangements. That distinction is preserved.
 The source HyDE duration multiplier is 1 in the factory data. Fluid Tiles' global
-0.5×–2× speed and KDE's animation factor apply to both curve types by scaling time.
+0.1×–2× speed and KDE's animation factor apply to both curve types by scaling time.
 
 Opacity is clamped to [0, 1] when painted, including overshooting opacity curves.
 Geometry curves retain overshoot, with positive presentation dimensions. Spring

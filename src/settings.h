@@ -10,6 +10,14 @@ inline const QString defaultIgnoredApplications=QStringLiteral(
     "krunner\nyakuake\nspectacle\nkded5\nxwaylandvideobridge\nplasmashell\nksplashqml\n"
     "org.kde.plasmashell\norg.kde.polkit-kde-authentication-agent-1\norg.kde.kruler\n"
     "kruler\nkwin_wayland\nksmserver-logout-greeter");
+// Appearance is independent of tiling: Plasma settings/dialogs may be rounded.
+// Panels, desktops, popups and layer-shell surfaces are rejected structurally.
+inline const QString defaultAppearanceIgnoredApplications=[] {
+    auto rules=defaultIgnoredApplications.split('\n');
+    rules.removeAll(QStringLiteral("plasmashell"));
+    rules.removeAll(QStringLiteral("org.kde.plasmashell"));
+    return rules.join('\n');
+}();
 inline const QString defaultIgnoredRoles=QStringLiteral("quake");
 // Window identifiers and titles are not paths: '*' also matches slashes.
 // Whole-field, case-insensitive globs, one rule per line; no regex syntax.

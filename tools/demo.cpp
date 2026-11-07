@@ -50,12 +50,12 @@ int main(int argc, char **argv) {
     QApplication app(argc, argv);
     const auto args = app.arguments();
     const QString label = args.value(1,"Test A");
-    app.setDesktopFileName(args.value(4)=="authentication-prompt"?"org.kde.polkit-kde-authentication-agent-1":args.value(4)=="default-ignored"?"krunner":args.value(4)=="forced-server"?"fluidtiles-forced-frame":"fluidtiles-demo");
+    app.setDesktopFileName(args.value(4).startsWith("plasma-") ? (args.value(4)=="plasma-legacy" ? "plasmashell" : "org.kde.plasmashell") : args.value(4)=="authentication-prompt"?"org.kde.polkit-kde-authentication-agent-1":args.value(4)=="default-ignored"?"krunner":args.value(4)=="forced-server"?"fluidtiles-forced-frame":"fluidtiles-demo");
     Demo demo(label, QColor(args.value(2,"#225577")), args.value(3,"0").toInt());
     const auto kind=args.value(4);
     if (kind=="fixed") demo.setFixedSize(360,240);
     else if (kind=="authentication-prompt") { demo.setWindowFlag(Qt::Dialog);demo.setWindowModality(Qt::ApplicationModal); }
-    else if (kind=="dialog") {
+    else if (kind=="dialog" || kind=="plasma-dialog") {
         Demo parent(label+" parent",QColor("#5b2c6f"),0);
         parent.show();
         demo.setParent(&parent,Qt::Dialog);

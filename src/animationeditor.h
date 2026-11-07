@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include "animation.h"
-#include <QElapsedTimer>
-#include <QTimer>
 #include <QWidget>
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QLabel;
-class QListWidget;
 class QSlider;
 class QGroupBox;
 
@@ -35,36 +32,6 @@ class CurveCanvas final : public QWidget {
     QPointF point(double, double) const;
 };
 
-class AnimationPreview final : public QWidget {
-    Q_OBJECT
-    Q_PROPERTY(bool running READ running)
-  public:
-    explicit AnimationPreview(QWidget *parent = nullptr);
-    void setSettings(const Fluid::AnimationSettings &s) { m_settings = s; }
-    void play(const QString &action);
-    bool running() const { return m_timer.isActive(); }
-
-  protected:
-    void paintEvent(QPaintEvent *) override;
-    void hideEvent(QHideEvent *) override;
-
-  private:
-    struct Tile {
-        Fluid::AnimationMotion motion;
-        Fluid::ScalarAnimation opacity;
-        bool visible = true, closing = false;
-    };
-    std::array<Tile, 3> m_tiles;
-    Fluid::AnimationSettings m_settings;
-    QTimer m_timer;
-    QElapsedTimer m_clock;
-    qint64 m_last = 0;
-    QRectF area() const;
-    void resetScene();
-    void move(Tile &, const QRectF &, Fluid::AnimationEvent);
-    void tick();
-};
-
 class AnimationEditor final : public QWidget {
     Q_OBJECT
     Q_PROPERTY(QString animationSettings READ settings WRITE setSettings NOTIFY settingsChanged USER true)
@@ -79,16 +46,15 @@ class AnimationEditor final : public QWidget {
     Fluid::AnimationSettings m_settings;
     QString m_value;
     bool m_loading = false;
-    QListWidget *m_presets;
-    QLabel *m_description, *m_error, *m_speedLabel;
+    QComboBox *m_presets;
+    QLabel *m_description, *m_error;
     QCheckBox *m_enabled, *m_eventEnabled, *m_inherit, *m_fade;
-    QSlider *m_speed, *m_bounce;
+    QSlider *m_bounce;
     QComboBox *m_event, *m_track, *m_type, *m_style, *m_origin, *m_direction, *m_library;
-    QDoubleSpinBox *m_mass, *m_stiffness, *m_damping, *m_duration, *m_size;
+    QDoubleSpinBox *m_speed, *m_mass, *m_stiffness, *m_damping, *m_duration, *m_size;
     std::array<QDoubleSpinBox *, 4> m_points;
-    QGroupBox *m_details;
+    QGroupBox *m_details, *m_curveDetails;
     CurveCanvas *m_canvas;
-    AnimationPreview *m_preview;
     Fluid::AnimationEvent event() const;
     Fluid::AnimationProfile rawProfile() const;
     void rebuildPresets();
@@ -96,7 +62,4 @@ class AnimationEditor final : public QWidget {
     void edit();
     void commit();
     void resetAll();
-    void saveAs();
-    void renamePreset();
-    void deletePreset();
 };

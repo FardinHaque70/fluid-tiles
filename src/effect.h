@@ -26,6 +26,8 @@ public:
     void prePaintScreen(KWin::ScreenPrePaintData &) override;
     void prePaintWindow(KWin::RenderView *, KWin::EffectWindow *, KWin::WindowPrePaintData &) override;
     void postPaintScreen() override;
+    bool paintScreen(const KWin::RenderTarget &, const KWin::RenderViewport &, int,
+                     const KWin::Region &, KWin::LogicalOutput *) override;
     bool filterMotion(KWin::PointerMotionEvent *);
     bool filterButton(KWin::PointerButtonEvent *);
     bool filterKey(KWin::KeyboardKeyEvent *);
@@ -102,6 +104,9 @@ private:
     std::optional<Fluid::AnimationSettings> m_pendingAnimationSettings;
     std::vector<double> m_settlingTimes;
     quint64 m_closedAnimations=0,m_textureCaptures=0;
+    QJsonArray m_testCloseFrames;
+    bool m_testCloseTracking=false;
+    int m_testCloseEndFrames=0;
     std::map<QString, Fluid::Tree> m_trees;
     std::map<QString, Metrics> m_metrics;
     QSet<QString> m_floating, m_pendingPairChecks;
@@ -136,6 +141,7 @@ private:
     void applyPairPreference(const QString &, KWin::EffectWindow *);
     void detach(State &, bool restore);
     void restoreAll();
+    void syncDesktopAnimations(bool active);
     void floatToCenter(State &);
     void cancelFloatingTransition(State &);
     void configureMotion(State &,Fluid::AnimationEvent);

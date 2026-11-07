@@ -28,40 +28,52 @@ Popup/internal windows (including decoration tooltips), hidden windows, special 
 
 ## Appearance
 
-Version 0.5 adds three independently switchable sections in the Appearance tab: **Outlines** (width and automatic KDE or custom colors), **Rounded corners** (radius), and **Titlebar control** (hide on tiles or on tiled and floating windows). Turning a section off disables its fields and restores only that native feature; its saved values are retained. Shared appearance exclusions remain separate from tiling exclusions. Defaults hide supported tiled titlebars; floating windows keep their controls. Gap values retain visible empty space between outlines. See [appearance details and limits](appearance.md).
+Version 0.5 adds three independently switchable sections in the Appearance tab: **Outlines** (width and automatic KDE or custom colors), **Rounded corners** (radius), and **Titlebar control** (hide on tiles or on tiled and floating windows). Turning a section off disables its fields and restores only that native feature; its saved values are retained. Shared appearance exclusions remain separate from tiling exclusions. Normal Plasma settings windows and dialogs can receive corners/outlines; Plasma IDs remain excluded from tiling. Panels and desktop surfaces are protected by window-type checks. Defaults hide supported tiled titlebars; floating windows keep their controls. Gap values retain visible empty space between outlines. See [appearance details and limits](appearance.md).
+
+## Desktop animation ownership
+
+While Fluid Tiles is enabled, KDE's **Scale** and **Fade** desktop effects are
+explicitly disabled in `kwinrc` and unloaded. Their previous settings (including
+implicit defaults) are saved in `FluidTiles-DesktopAnimations`. Emergency disable
+and script unload restore those choices. A loaded but disabled controller leaves
+KDE effects alone. Re-enabling Scale/Fade through Desktop Effects Apply while
+Fluid Tiles is active is corrected back to disabled.
+
+This switch is global, including ordinary floating windows; workspace effects
+are unchanged. Fluid Tiles' animation document and speed are independent of the
+switch. The legacy KDE-close delegation choice now means no Fluid Tiles closing
+animation while the KDE effects are disabled.
 
 ## Animation editor
 
-Choose a preset in **Animations**, then try Open, Close, Rearrange, Drop, Resize,
-Float or Interrupt in the miniature scene. The preview shares the compositor's
-motion engine, changes no desktop windows, and stops when the tab is hidden.
-Speed ranges from 0.5× to 2×; KDE's global animation factor still applies to the
-compositor. Turning KDE animations off immediately settles all native tracks.
+The **Animations** tab offers two presets: **Default** (Fluid's balanced motion)
+and **Elastic** (the copied Hyprland Example recipe, adapted for Fluid Tiles).
+The preset selector, enable switch and numeric speed control stay at the top.
+Enter a speed from 0.1× to 2× with up to two decimal places; 1× is normal speed.
+There is no miniature window preview. KDE's global animation factor still applies;
+turning KDE animations off immediately settles native tracks.
 
-The factory selection is **Fluid — default**, **Hyprland Example**, **HyDE Fast**,
-**HyDE Optimized**, **Popin Soft — HyDE / ML4W**, **HyDE macOS**, **ML4W Dynamic**,
-**Classic** and **Off**. Imported recipes are labeled **Adapted for Fluid Tiles**;
-Preset details identifies the source and differences. Exact recipes, revisions,
-credits, hashes and licenses ship in `contents/data/animations`.
+Select an event, then adjust the side-by-side **Event** and **Curve** panels.
+Opening and closing have independent opacity curves. Drop and floating can inherit
+rearrangement. Spring mass, stiffness and damping share one row, with bounce below.
+Béziers expose duration, named easings, draggable handles and numeric coordinates.
+Arrow keys adjust a selected handle; Space switches handles. Pop size/origin and
+slide direction appear only when applicable. The standalone dialog opens at
+780×640; a scroll area accommodates smaller windows and larger system fonts.
 
-Expand **Event settings & curve editor** to edit each event. Opening and closing
-have independent opacity curves. Drop and floating can inherit rearrangement.
-Springs expose mass, stiffness, damping and bounce; Béziers expose duration,
-19 named standard easings plus the copied recipe curves, draggable handles and
-numeric coordinates. Arrow keys adjust a selected handle; Space switches handles.
-Spring duration comes from physics, while the speed slider scales both models.
-Pop size/origin and slide direction are shown only for applicable lifecycle styles.
-Classic delegates closing to KDE; custom closing profiles can also choose this.
+Editing shows **Custom settings** in the selector. **Reset event** removes that
+override; **Reset animations** restores Default. Apply saves changes; Cancel or
+reload discards the draft. Existing custom presets and older factory recipe
+references remain readable in saved documents, without appearing in the selector.
+Defaults and Reset animations retain archived custom data. Animation-only changes
+do not cancel a held drag/resize; the new profile takes effect on release.
 
-Factory presets are immutable. Editing creates a Custom draft; **Save As** stores
-it under a new name. Named presets can be renamed or deleted. **Reset event**
-removes that override, and **Reset animations** selects Fluid while preserving
-saved presets. Standard Defaults also retains saved presets. Apply saves the
-versioned document; Cancel or reload discards the draft. Saving animation settings
-alone does not cancel a held drag/resize; the new profile takes effect on release.
+**Preset details** identifies the source and adaptations. The original recipe
+snapshots, revisions, credits and licenses remain in `contents/data/animations`.
+The broader original catalog is retained internally for saved-document compatibility.
 
 The installer selects Fluid once and saves the old spring frequency in
-**Classic — previous settings**. The legacy `SpringFrequency` key remains for
+the archived **Classic — previous settings** record. The legacy `SpringFrequency` key remains for
 rollback compatibility but is no longer the motion control in the dialog.
 `AnimationSettingsVersion` prevents reimporting the legacy preference on later
 installs. Updates preserve the Scripts checkbox, current tiling state and login preference.

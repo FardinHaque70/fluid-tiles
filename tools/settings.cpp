@@ -4,6 +4,7 @@
 #include <QDoubleSpinBox>
 #include <QPlainTextEdit>
 #include <QTimer>
+#include <QTabWidget>
 #include <QMessageBox>
 #include <KCMultiDialog>
 #include <KPluginMetaData>
@@ -26,8 +27,12 @@ int main(int argc,char **argv) {
     dialog.addModule(metadata,{"fluidtiles-controller","KWin/Script"});
     dialog.setFaceType(KPageDialog::Plain);
     dialog.setWindowTitle("Fluid Tiles Settings");
-    dialog.resize(780,760);
+    dialog.resize(780,640);
     const bool test=qEnvironmentVariableIntValue("FLUIDTILES_SETTINGS_TEST")==1 && app.arguments().size()==2;
+    if (test && qEnvironmentVariable("FLUIDTILES_SETTINGS_TAB")=="animations") {
+        if (auto tabs=dialog.findChild<QTabWidget *>("tabs"))
+            tabs->setCurrentWidget(dialog.findChild<QWidget *>("animationsTab"));
+    }
     int result=0;
     if (test) QTimer::singleShot(std::clamp(qEnvironmentVariableIntValue("FLUIDTILES_SETTINGS_HOLD_MS"),800,30000),&dialog,[&] {
         if (!dialog.findChild<QDoubleSpinBox *>("kcfg_InnerGap") || !dialog.findChild<QPlainTextEdit *>("kcfg_IgnoreTitles")

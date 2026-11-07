@@ -166,7 +166,7 @@ AnimationSettings AnimationSettings::read(const QString &text) {
     auto d = QJsonDocument::fromJson(text.toUtf8());
     const auto o = d.object();
     bool ok = d.isObject() && o.value("version").toInt() == 1 && o.value("enabled").isBool() &&
-              number(o, "speed", .5, 2) && o.value("overrides").isObject() &&
+              number(o, "speed", .1, 2) && o.value("overrides").isObject() &&
               o.value("customPresets").isArray();
     s.document = o;
     QStringList ids;
@@ -177,7 +177,7 @@ AnimationSettings AnimationSettings::read(const QString &text) {
         const auto id = p.value("id").toString();
         ok &= !id.isEmpty() && !ids.contains(id) && !p.value("name").toString().trimmed().isEmpty();
         if (p.contains("speed"))
-            ok &= number(p, "speed", .5, 2);
+            ok &= number(p, "speed", .1, 2);
         if (p.contains("enabled"))
             ok &= p.value("enabled").isBool();
         ids.append(id);

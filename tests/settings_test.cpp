@@ -13,7 +13,8 @@
 #include <QTabWidget>
 #include <QPushButton>
 #include <QListView>
-#include <QListWidget>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QTimer>
 #include <QDialog>
 #include <QLabel>
@@ -109,37 +110,74 @@ int main(int argc,char **argv) {
         };
         if(args.value(1)=="animations") {
             auto editor=form->findChild<QWidget *>("kcfg_AnimationSettings");require(editor,"No animation settings property");
-            auto gallery=form->findChild<QListWidget *>("animationPresets");require(gallery && gallery->count()>=9,"Factory preset gallery missing");
+            auto presets=form->findChild<QComboBox *>("animationPresets");
+            require(presets && presets->count()==2 && presets->itemText(0)=="Default" && presets->itemText(1)=="Elastic", "Expected only Default and Elastic presets");
+            require(!form->findChild<QWidget *>("animationPreview") && !form->findChild<QPushButton *>("previewOpen"),"Tiling preview was not removed");
             const auto saved=editor->property("animationSettings").toString();
-            form->resize(780,1040);form->show();auto tabs=form->findChild<QTabWidget *>("tabs");tabs->setCurrentWidget(form->findChild<QWidget *>("animationsTab"));QCoreApplication::processEvents();
+            form->resize(740,540);form->show();auto tabs=form->findChild<QTabWidget *>("tabs");tabs->setCurrentWidget(form->findChild<QWidget *>("animationsTab"));QCoreApplication::processEvents();
             auto state=[&]{return Fluid::AnimationSettings::read(editor->property("animationSettings").toString());};
-            gallery->setCurrentRow(1);require(state().presetId()=="hyprland","Gallery does not change draft profile");
+            auto speed=spin("animationSpeed");
+            require(speed->minimum()==.1 && speed->maximum()==2.,"Animation speed bounds are incorrect");
+            require(!form->findChild<QSlider *>("animationSpeed"),"Animation speed is still a slider");
+            for(double value : {.1,.37,2.}) {
+                auto input=speed->findChild<QLineEdit *>();require(input,"Animation speed is not editable");
+                input->setText(speed->locale().toString(value,'f',2));speed->interpretText();
+                require(state().error.isEmpty() && std::abs(state().speed()-value)<1e-9,"Typed animation speed did not update draft");
+                module->save();speed->setValue(1.);module->load();
+                require(std::abs(speed->value()-value)<1e-9 && std::abs(state().speed()-value)<1e-9,"Animation speed did not survive Apply/reload");
+            }
+            speed->setValue(.09);require(speed->value()==.1 && state().speed()==.1,"Animation speed allowed a value below 0.1");
+            speed->setValue(2.01);require(speed->value()==2. && state().speed()==2.,"Animation speed allowed a value above 2");
+            editor->setProperty("animationSettings",saved);module->save();
+            presets->setCurrentIndex(1);require(state().presetId()=="hyprland","Elastic does not select the original Hyprland recipe");
             auto configGroup=KConfigGroup(config,"Script-fluidtiles-controller");require(configGroup.readEntry("AnimationSettings",QString{})==saved,"Selecting preset saved without Apply");
-            form->findChild<QToolButton *>("animationAdvanced")->setChecked(true);
+            const auto archived=state().document["customPresets"];
             auto type=form->findChild<QComboBox *>("animationCurveType");type->setCurrentIndex(1);
             spin("animationX1")->setValue(.234);require(state().profile(Fluid::AnimationEvent::Open).curve.x1==.234,"Numeric curve edit missing");
+            require(presets->currentIndex()==-1,"Edited factory recipe should show Custom settings");
             auto canvas=form->findChild<QWidget *>("animationCurveCanvas");QKeyEvent arrow(QEvent::KeyPress,Qt::Key_Right,Qt::NoModifier);QCoreApplication::sendEvent(canvas,&arrow);
             require(std::abs(state().profile(Fluid::AnimationEvent::Open).curve.x1-.244)<1e-6,"Keyboard curve edit missing");
-            auto prompt=[&](const char *button,const QString &text){QTimer::singleShot(0,[text]{auto dialog=qobject_cast<QInputDialog *>(QApplication::activeModalWidget());if(dialog){dialog->setTextValue(text);dialog->accept();}});form->findChild<QPushButton *>(button)->click();};
             form->findChild<QCheckBox *>("animationsEnabled")->setChecked(false);
-            prompt("animationSaveAs","Regression custom");require(state().presetId().startsWith("user-"),"Save As did not select saved preset");
-            require(state().document["customPresets"].toArray().last().toObject()["profiles"].toObject()["open"].toObject()["enabled"].toBool(),"Saving while disabled erased event choices");
             form->findChild<QCheckBox *>("animationsEnabled")->setChecked(true);
-            require(state().profile(Fluid::AnimationEvent::Open).enabled,"Master switch could not restore saved animation");
-            prompt("animationRename","Renamed custom");require(state().document["customPresets"].toArray().last().toObject()["name"]=="Renamed custom","Custom preset rename lost");
+            require(state().profile(Fluid::AnimationEvent::Open).enabled,"Master switch erased the event choice");
             module->save();const auto committed=editor->property("animationSettings").toString();
-            form->findChild<QPushButton *>("animationDelete")->click();require(state().presetId()=="fluid","Delete did not leave a valid preset selected");
-            module->load();require(editor->property("animationSettings").toString()==committed,"Deleting an unsaved custom preset was not reversible");
-            gallery->setCurrentRow(0);module->load();require(editor->property("animationSettings").toString()==committed,"Reload failed to discard unsaved preset");
-            module->defaults();require(state().presetId()=="fluid" && !state().document["customPresets"].toArray().isEmpty(),"Defaults removed saved presets");
+            presets->setCurrentIndex(0);module->load();require(editor->property("animationSettings").toString()==committed,"Reload failed to discard an unsaved preset");
+            module->defaults();require(state().presetId()=="fluid" && state().document["customPresets"]==archived,"Defaults removed archived presets");
             require(configGroup.readEntry("AnimationSettings",QString{})==committed,"Defaults wrote before Apply");
-            // Restore the other tabs after testing global Defaults. The editor
-            // regression must not silently save their temporary default values.
             module->load();form->findChild<QPushButton *>("animationReset")->click();
-            auto preview=form->findChild<QWidget *>("animationPreview");form->findChild<QPushButton *>("previewOpen")->click();require(preview->property("running").toBool(),"Preview did not start");
-            tabs->setCurrentWidget(form->findChild<QWidget *>("layoutTab"));QCoreApplication::processEvents();require(!preview->property("running").toBool(),"Hidden preview timer still running");
-            tabs->setCurrentWidget(form->findChild<QWidget *>("animationsTab"));QCoreApplication::processEvents();
-            if(!args.value(2).isEmpty()){QDir images(args.value(2));form->grab().save(images.filePath("animation-editor.png"));form->findChild<QToolButton *>("animationAdvanced")->setChecked(false);QCoreApplication::processEvents();form->grab().save(images.filePath("animation-presets.png"));}
+            auto event=form->findChild<QComboBox *>("animationEvent");
+            auto track=form->findChild<QComboBox *>("animationTrack");
+            auto scroll=form->findChild<QScrollArea *>("animationOptionsScroll");
+            require(scroll,"No size-constrained animation editor");
+            auto fit=[&]{
+                for(int pass=0;pass<5;++pass)QCoreApplication::processEvents();
+                require(form->width()==740 && form->height()==540,"Animation form forced a larger window");
+                if(scroll->verticalScrollBar()->maximum() || scroll->horizontalScrollBar()->maximum()) {
+                    std::cerr<<"Editor overflow: event="<<event->currentIndex()<<" curve="<<type->currentIndex()<<" form="<<form->width()<<"x"<<form->height()<<" content="<<scroll->widget()->width()<<"x"<<scroll->widget()->height()<<" viewport="<<scroll->viewport()->width()<<"x"<<scroll->viewport()->height()<<"\n";
+                    if(!args.value(2).isEmpty())form->grab().save(QDir(args.value(2)).filePath("animation-overflow.png"));
+                }
+                require(scroll->verticalScrollBar()->maximum()==0 && scroll->horizontalScrollBar()->maximum()==0,"Animation controls require scrolling at a normal window size");
+                auto left=form->findChild<QWidget *>("animationEventPanel");auto right=form->findChild<QWidget *>("animationCurvePanel");
+                require(right->x()>=left->geometry().right(),"Event and curve fields are not side by side");
+            };
+            for(int preset=0;preset<2;++preset){
+                presets->setCurrentIndex(preset);
+                for(int e=0;e<event->count();++e){
+                    event->setCurrentIndex(e);
+                    if(e>=3)form->findChild<QCheckBox *>("animationInherit")->setChecked(false);
+                    for(int curve=0;curve<2;++curve){
+                        type->setCurrentIndex(curve);fit();
+                        if(!args.value(2).isEmpty() && e==0 && preset==1){
+                            QDir images(args.value(2));require(form->grab().save(images.filePath(curve ? "animation-bezier.png" : "animation-editor.png")),"Cannot capture animation editor");
+                        }
+                    }
+                    if(e<2){track->setCurrentIndex(1);fit();track->setCurrentIndex(0);}
+                }
+            }
+            // Old non-gallery recipes must remain readable without changing preferences.
+            Fluid::AnimationSettings old;old.select("hyde-fast");
+            editor->setProperty("animationSettings",old.serialized());
+            require(state().presetId()=="hyde-fast" && presets->currentIndex()==-1,"A previously saved recipe was changed on load");
             editor->setProperty("animationSettings",saved);module->save();
             require(KConfigGroup(config,"Plugins").readEntry("fluidtiles-controllerEnabled",false)==wasEnabled,"Animation settings changed activation");
             std::cout<<"Animation settings editor tests passed\n";return 0;
@@ -227,7 +265,7 @@ int main(int argc,char **argv) {
             require(form->findChild<KColorButton *>("kcfg_ActiveBorderColor"),"Native color control is unavailable");
             require(form->findChild<KColorButton *>("kcfg_ActiveBorderColor")->color()==QColor("#3daee9")
                 && form->findChild<KColorButton *>("kcfg_InactiveBorderColor")->color()==QColor("#6e6e6e"),"UI color defaults incorrect");
-            require(text("kcfg_AppearanceIgnoredApplications")->toPlainText()==Fluid::defaultIgnoredApplications,"Appearance exclusion defaults incorrect");
+            require(text("kcfg_AppearanceIgnoredApplications")->toPlainText()==Fluid::defaultAppearanceIgnoredApplications,"Appearance exclusion defaults incorrect");
             require(text("kcfg_IgnoreRoles")->toPlainText()==Fluid::defaultIgnoredRoles,"UI role defaults differ from native defaults");
             require(spin("kcfg_InnerGap")->value()==10 && spin("kcfg_OuterGap")->value()==10
                 && spin("kcfg_SpringFrequency")->value()==24,"UI defaults incorrect");

@@ -1,5 +1,53 @@
 # Fluid Tiles behavior audit
 
+## Version 0.6.3 global Scale/Fade ownership
+
+At the user's request, enabled Fluid Tiles now writes `scaleEnabled=false` and
+`fadeEnabled=false` in KDE's Plugins group and unloads both effects. It saves and
+restores each prior setting, including absent/default entries. Emergency disable
+and native/script unload restore KDE's prior choices. Config Apply is enforced
+while Fluid Tiles is enabled. Workspace effects and the Fluid Tiles animation
+document are unchanged. This intentionally changes the original policy for
+unmanaged floating windows: globally disabled KDE Scale/Fade no longer animate
+them. Per-window grab roles remain defensive lifecycle bookkeeping, rather than
+the mechanism used to keep these two KDE effects out of the renderer.
+
+## Version 0.6.2 closing-flash handoff
+
+A per-painted-frame regression with real Dolphin confirmed that completing
+cleanup in `prePaintScreen` removes the closing record before that frame is
+painted. KWin still retains the native window for the paint pass, so the effect
+no longer applies the final zero opacity and the native visual flashes once.
+The pre-fix trace reaches background RGB `(255,204,0)`, returns to full white
+`(255,255,255)` for exactly one frame after the record is removed, then returns
+to the background.
+
+Normal completion now retains the closing record through painting and releases
+it in `postPaintScreen`. Cancellation behavior, rendering strategy, animation
+curves, durations, speed, admission and native interaction rules are unchanged.
+The earlier uninstalled direct-rendering experiment is not part of this patch.
+The test-only pixel probe samples each paint plus three post-close frames; it
+performs no readback or extra repaint work outside disposable test mode.
+
+## Version 0.6.1 Plasma dialog appearance
+
+The reported KDE control station settings window and Select Icon dialog both
+identify as `org.kde.plasmashell`, instance `plasmashell`. Their appearance was
+excluded by defaults copied from Krohnkite's tiling ignore list. The pinned
+Krohnkite `kwindriver.ts::addWindow`, `kwinwindow.ts::shouldIgnore`/`shouldFloat`
+and `res/config.xml` were rechecked: these exclusions concern management, and
+its native `noBorder` control does not implement compositor corner rounding.
+
+Fluid Tiles now has independent appearance defaults omitting those two IDs.
+Existing window-type checks continue to reject internal/popup/special windows
+and layer-shell surfaces, including surfaces that report as normal windows.
+Ordinary Plasma windows and modal/transient dialogs can receive appearance,
+while admission, tiling rules, geometry ownership and floating titlebar policy
+are unchanged. This is a Fluid Tiles appearance adaptation. Explicit appearance
+exclusion patterns still take precedence. Factory-list migration is one-time
+and preserves custom lists. A specifically authorized live fix may remove the
+two entries from a customized list while preserving its other entries.
+
 ## Version 0.6.0 animation overhaul
 
 Source audit, 2026-11-04: Hyprland `988b94362e2700b4b07cb7247d81a86bf065b1fe`
@@ -48,7 +96,12 @@ and ML4W `9ead14e7`, with complete pins/hashes in the packaged source manifest.
 The catalog compiler parses literals without running upstream code; defaults and
 inheritance are resolved explicitly. The [adaptation record](../package/contents/data/animations/ADAPTATIONS.md)
 contains credits, mappings, omitted effects and original license locations.
-The native KDE editor and its preview share the engine and settings resolver.
+The native KDE editor shares the curve types and settings resolver with the engine.
+The 2026-11-06 settings simplification removes the miniature tiling preview and
+exposes only **Default** and **Elastic** (the unchanged Hyprland Example recipe).
+Event and curve controls sit side by side in a compact dialog. Other catalog
+recipes remain internal for saved-document compatibility; archived custom data
+is preserved. This UI-only change does not alter compositor motion or admission.
 One-time migration archives the previous frequency before selecting Fluid;
 future installs and Defaults do not remove custom presets.
 

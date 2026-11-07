@@ -17,6 +17,32 @@ int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
     try {
         require(animationPresets().size() == 9, "Factory catalog size");
+        for (double speed : {.1, .37, 1., 2.}) {
+            AnimationSettings settings;
+            settings.document["speed"] = speed;
+            auto loaded = AnimationSettings::read(settings.serialized());
+            require(loaded.error.isEmpty() && near(loaded.speed(), speed),
+                    "Numeric animation speed did not round-trip");
+            auto custom = AnimationSettings::legacyPreset(8);
+            custom["speed"] = speed;
+            settings.document["customPresets"] = QJsonArray{custom};
+            loaded = AnimationSettings::read(settings.serialized());
+            loaded.select("classic-previous");
+            require(loaded.error.isEmpty() && near(loaded.speed(), speed),
+                    "Custom preset rejected numeric animation speed");
+        }
+        for (double speed : {0., .09, 2.01}) {
+            AnimationSettings settings;
+            settings.document["speed"] = speed;
+            require(!AnimationSettings::read(settings.serialized()).error.isEmpty(),
+                    "Out-of-range animation speed accepted");
+            settings.document["speed"] = 1.;
+            auto custom = AnimationSettings::legacyPreset(8);
+            custom["speed"] = speed;
+            settings.document["customPresets"] = QJsonArray{custom};
+            require(!AnimationSettings::read(settings.serialized()).error.isEmpty(),
+                    "Custom preset accepted out-of-range animation speed");
+        }
         for (const auto &preset : animationPresets()) {
             AnimationSettings settings;
             settings.select(preset.id);

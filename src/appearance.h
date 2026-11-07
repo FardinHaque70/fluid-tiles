@@ -88,7 +88,7 @@ private:
     int m_titlebars=1; // Keep, HideTiled, HideAllSupported
     QColor m_customActive=QColor("#3daee9"), m_customInactive=QColor("#6e6e6e");
     QColor m_active, m_inactive;
-    QString m_ignoreText=defaultIgnoredApplications, m_error;
+    QString m_ignoreText=defaultAppearanceIgnoredApplications, m_error;
     IgnorePatterns m_ignore;
     KSharedConfig::Ptr m_kdeConfig;
     KConfigWatcher::Ptr m_themeWatcher;

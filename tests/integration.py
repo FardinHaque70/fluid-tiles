@@ -20,12 +20,15 @@ from admission_behaviors import run_popup_audit, run_fifth_audit
 from stacking_behaviors import run_stacking_audit
 from insertion_behaviors import run_insertion_audit
 from appearance_behaviors import run_appearance_audit
+from plasma_appearance_behaviors import run_plasma_appearance_audit
 from floating_behaviors import run_floating_audit
 from interaction_behaviors import run_interaction_audit
 from pair_behaviors import run_pair_audit
 from opening_behaviors import run_opening_audit
 from single_behaviors import run_single_audit
 from animation_behaviors import run_animation_audit, run_activation_update_audit
+from last_close_behaviors import run_last_close_audit
+from effect_ownership_behaviors import run_effect_ownership_audit
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / os.environ.get("FLUIDTILES_TEST_RESULTS","test-results")
@@ -80,8 +83,8 @@ def check_no_black_content(name):
 def inner():
     children=[]
     log=open(RESULTS/"kwin.log","w")
-    kwin=subprocess.Popen(["kwin_wayland","--virtual","--width",("2648" if os.environ.get("FLUIDTILES_TEST_FIFTH")=="1" else "1600"),
-        "--height",("1448" if os.environ.get("FLUIDTILES_TEST_FIFTH")=="1" else "1000"),
+    kwin=subprocess.Popen(["kwin_wayland","--virtual","--width",os.environ.get("FLUIDTILES_TEST_WIDTH",("2648" if os.environ.get("FLUIDTILES_TEST_FIFTH")=="1" else "1600")),
+        "--height",os.environ.get("FLUIDTILES_TEST_HEIGHT",("1448" if os.environ.get("FLUIDTILES_TEST_FIFTH")=="1" else "1000")),
         "--scale",os.environ.get("FLUIDTILES_TEST_SCALE","1.45"),
         "--no-lockscreen","--no-kactivities","--no-global-shortcuts","--socket","fluidtiles-test"],
         stdout=log,stderr=log)
@@ -137,6 +140,15 @@ def inner():
         wait_for(lambda:abs(status()["outputs"][0]["scale"]-requested_scale)<.001)
         (RESULTS/"support.txt").write_text(subprocess.check_output(
             ["qdbus6","org.kde.KWin","/KWin","org.kde.KWin.supportInformation"],text=True))
+        if os.environ.get('FLUIDTILES_TEST_EFFECT_OWNERSHIP')=='1':
+            report=run_effect_ownership_audit((call,status,wait_for,tiled,settled,ROOT),env,log,RESULTS)
+            print(json.dumps(report),flush=True);return
+        if os.environ.get('FLUIDTILES_TEST_LAST_CLOSE')=='1':
+            report=run_last_close_audit((call,status,wait_for,tiled,settled,ROOT),env,children,log,RESULTS)
+            print(json.dumps(report),flush=True);return
+        if os.environ.get('FLUIDTILES_TEST_PLASMA_APPEARANCE')=='1':
+            report=run_plasma_appearance_audit((call,status,wait_for,tiled,settled,ROOT),env,children,log,RESULTS)
+            print(json.dumps({'pass':report['pass'],'cases':report['cases']}),flush=True);return
         if os.environ.get('FLUIDTILES_TEST_SINGLE')=='1':
             report=run_single_audit((call,status,wait_for,tiled,settled,ROOT),env,children,log,RESULTS)
             print(json.dumps(report),flush=True);return
@@ -440,7 +452,7 @@ def main():
     session.mkdir(exist_ok=True)
     for name in ["runtime","config","data","cache"]:
         (session/name).mkdir(exist_ok=True,mode=0o700)
-    (session/"config/kdeglobals").write_text("[KDE]\nAnimationDurationFactor=1\n")
+    (session/"config/kdeglobals").write_text("[KDE]\nAnimationDurationFactor="+os.environ.get("FLUIDTILES_TEST_ANIMATION_FACTOR","1")+"\n")
     shutil.copytree(ROOT/"build/package",session/"data/kwin/scripts/fluidtiles-controller",dirs_exist_ok=True)
     package=session/"data/kwin/scripts/fluidtiles-controller"
     metadata=json.loads((package/"metadata.json").read_text())

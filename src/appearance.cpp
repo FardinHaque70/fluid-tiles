@@ -50,7 +50,7 @@ bool Appearance::configure(const KConfigGroup &config) {
     const double width=std::clamp(config.readEntry("BorderWidth",2.0),0.0,8.0);
     const double radius=std::clamp(config.readEntry("CornerRadius",8.0),0.0,32.0);
     const int titlebars=std::clamp(config.readEntry("TitlebarScope",legacyTitlebars==2?1:0),0,1)+1;
-    const auto ignore=config.readEntry("AppearanceIgnoredApplications",defaultIgnoredApplications);
+    const auto ignore=config.readEntry("AppearanceIgnoredApplications",defaultAppearanceIgnoredApplications);
     const bool geometry=outlines!=m_outlinesEnabled || titlebarsEnabled!=m_titlebarsEnabled || width!=m_width || titlebars!=m_titlebars || ignore!=m_ignoreText;
     if (rounding!=m_roundingEnabled || radius!=m_radius || titlebarsEnabled!=m_titlebarsEnabled || titlebars!=m_titlebars || ignore!=m_ignoreText) ++m_sourceRevision;
     m_outlinesEnabled=outlines;m_roundingEnabled=rounding;m_titlebarsEnabled=titlebarsEnabled;
